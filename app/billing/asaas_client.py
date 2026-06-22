@@ -34,7 +34,7 @@ def _request(method: str, path: str, payload: dict | None = None) -> dict:
     headers = {
         "access_token": _api_key(),
         "Content-Type": "application/json",
-        "User-Agent": "AgendaFacil/1.0",
+        "User-Agent": "agendalink/1.0",
     }
     if payload is not None:
         body = json.dumps(payload).encode("utf-8")
@@ -83,7 +83,7 @@ def create_subscription(
     cycle: str = "MONTHLY",
     billing_type: str = "UNDEFINED",
     next_due_date: str,
-    description: str = "Assinatura AgendaFácil",
+    description: str = "Assinatura agendalink",
 ) -> dict:
     return _request(
         "POST",

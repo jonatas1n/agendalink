@@ -1,5 +1,5 @@
 {
-  "name": "agendafacil-e2e",
+  "name": "agendalink-e2e",
   "private": true,
   "description": "Cypress E2E tests (Docker: cypress/included; local: npm install && npm test)",
   "scripts": {

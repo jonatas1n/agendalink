@@ -1,4 +1,4 @@
-# AgendaFácil
+# agendalink
 
 Sistema de agendamentos com suporte a espaços compartilhados (coworkings, clínicas, estúdios).
 

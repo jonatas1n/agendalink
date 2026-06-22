@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def _from_email():
-    return getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@agendafacil.local")
+    return getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@agendalink.local")
 
 
 def _format_starts_at_local(starts_at) -> str:
@@ -54,7 +54,7 @@ def build_calendar_invite(appointment) -> str:
     def ics_dt(dt):
         return dt.strftime("%Y%m%dT%H%M%S")
 
-    uid = f"appointment-{appointment.pk}@agendafacil"
+    uid = f"appointment-{appointment.pk}@agendalink"
     product_name = appointment.product.name
     summary = f"Agendamento: {product_name}"
     description = (
@@ -64,7 +64,7 @@ def build_calendar_invite(appointment) -> str:
         [
             "BEGIN:VCALENDAR",
             "VERSION:2.0",
-            "PRODID:-//AgendaFácil//PT",
+            "PRODID:-//agendalink//PT",
             "CALSCALE:GREGORIAN",
             "METHOD:REQUEST",
             "BEGIN:VEVENT",
@@ -132,7 +132,7 @@ def _send_confirmation_email(appointment) -> bool:
 def _send_confirmation_phone(appointment) -> bool:
     when = _format_starts_at_local(appointment.starts_at)
     message = (
-        f"AgendaFácil: agendamento confirmado — {appointment.product.name} "
+        f"agendalink: agendamento confirmado — {appointment.product.name} "
         f"em {when}. Enviaremos lembretes antes do horário."
     )
     logger.info(
@@ -164,7 +164,7 @@ def send_new_booking_owner_notification(appointment) -> bool:
         f"E-mail: {appointment.display_guest_email()}\n"
         f"Telefone: {appointment.display_guest_phone()}\n"
         f"Data e horário: {when}\n\n"
-        f"Acesse o painel do AgendaFácil para ver detalhes."
+        f"Acesse o painel do agendalink para ver detalhes."
     )
     return _send_plain_email(subject=subject, body=body, to=owner_to)
 

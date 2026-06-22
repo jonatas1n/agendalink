@@ -1,9 +1,9 @@
 ---
-description: AgendaFácil — visão geral do monólito Django e armadilhas
+description: agendalink — visão geral do monólito Django e armadilhas
 alwaysApply: true
 ---
 
-# AgendaFácil (monólito)
+# agendalink (monólito)
 
 - Repo: agendamento. App Django em **`app/`** (não `backend/`).
 - Apps: `core`, `espacos`, `produtos`, `agendamentos`. FBV + templates; JSON em `*/api.py` + `core/api_urls.py`.

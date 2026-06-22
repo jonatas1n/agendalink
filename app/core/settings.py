@@ -120,7 +120,7 @@ EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.environ.get(
-    "DEFAULT_FROM_EMAIL", "AgendaFácil <noreply@agendafacil.local>"
+    "DEFAULT_FROM_EMAIL", "agendalink <noreply@agendalink.local>"
 )
 
 CORS_ALLOWED_ORIGINS = [

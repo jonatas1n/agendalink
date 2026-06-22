@@ -1,4 +1,4 @@
-describe('AgendaFácil — smoke', () => {
+describe('agendalink — smoke', () => {
   it('loads the landing page', () => {
     cy.visit('/', { timeout: 60_000 });
     cy.contains('h1', 'Agendamentos sem complicação');

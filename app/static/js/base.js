@@ -50,11 +50,11 @@ function initCurrencyInputs(root) {
   scope.querySelectorAll('[data-currency]').forEach(bindCurrencyInput);
 }
 
-window.AgendaFacil = window.AgendaFacil || {};
-window.AgendaFacil.initCurrencyInputs = initCurrencyInputs;
-window.AgendaFacil.formatCurrencyInputDigits = formatCurrencyInputDigits;
+window.agendalink = window.agendalink || {};
+window.agendalink.initCurrencyInputs = initCurrencyInputs;
+window.agendalink.formatCurrencyInputDigits = formatCurrencyInputDigits;
 /** Resposta JSON de erro da API pública (chave `erro`, legado `error`). */
-window.AgendaFacil.mensagemErroApi = function (data) {
+window.agendalink.mensagemErroApi = function (data) {
   if (!data || typeof data !== 'object') return '';
   return data.erro || data.error || '';
 };

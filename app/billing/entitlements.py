@@ -44,7 +44,7 @@ def subscription_snapshot(user) -> SubscriptionSnapshot:
             subscription=subscription,
             can_manage_store=False,
             banner_level="info",
-            banner_message="Escolha um plano para começar a usar o AgendaFácil.",
+            banner_message="Escolha um plano para começar a usar o agendalink.",
         )
 
     if status == StoreSubscription.STATUS_TRIALING:

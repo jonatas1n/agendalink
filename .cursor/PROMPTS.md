@@ -7,7 +7,7 @@ Copie/adapte os blocos abaixo. Inclua `@AGENTS.md` ou arquivos específicos com 
 ## Nova feature de negócio (HTML)
 
 ```
-Implemente [descrição] no AgendaFácil.
+Implemente [descrição] no agendalink.
 
 Contexto: @AGENTS.md @app/[espacos|produtos|agendamentos]/models.py
 
@@ -68,7 +68,7 @@ Contexto: @app/templates/base.html @app/static/css/base.css @AGENTS.md
 
 Padrão visual existente: cards, .btn, variáveis :root.
 JS apenas se necessário; preferir extra_js no template.
-Copy em português claro (AgendaFácil).
+Copy em português claro (marca **agendalink**).
 ```
 
 ---

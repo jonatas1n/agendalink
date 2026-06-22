@@ -300,7 +300,7 @@
           const data = await response.json().catch(() => ({}));
           if (!response.ok || !data.ok) {
             const msg =
-              (window.AgendaFacil && window.AgendaFacil.mensagemErroApi(data)) ||
+              (window.agendalink && window.agendalink.mensagemErroApi(data)) ||
               data.erro ||
               'Não foi possível validar o endereço. Tente novamente.';
             setClientError(errorEl, msg);
@@ -325,11 +325,11 @@
     });
   }
 
-  window.AgendaFacil = window.AgendaFacil || {};
-  window.AgendaFacil.normalizeStoreSlug = normalizeStoreSlug;
-  window.AgendaFacil.validateStoreSlugSync = validateStoreSlugSync;
-  window.AgendaFacil.sanitizeSlugInput = sanitizeSlugInput;
-  window.AgendaFacil.bindStoreSlugForm = bindStoreSlugForm;
+  window.agendalink = window.agendalink || {};
+  window.agendalink.normalizeStoreSlug = normalizeStoreSlug;
+  window.agendalink.validateStoreSlugSync = validateStoreSlugSync;
+  window.agendalink.sanitizeSlugInput = sanitizeSlugInput;
+  window.agendalink.bindStoreSlugForm = bindStoreSlugForm;
 
   document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('storeSettingsForm');

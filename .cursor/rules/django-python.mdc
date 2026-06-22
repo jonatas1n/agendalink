@@ -1,5 +1,5 @@
 ---
-description: Padrões Python/Django nos apps do AgendaFácil
+description: Padrões Python/Django nos apps do agendalink
 globs: app/**/*.py
 alwaysApply: false
 ---

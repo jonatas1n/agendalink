@@ -1,4 +1,4 @@
-describe('AgendaFácil — responsive layout', () => {
+describe('agendalink — responsive layout', () => {
   const viewports = [
     { label: 'mobile', width: 390, height: 844 },
     { label: 'tablet', width: 768, height: 1024 },

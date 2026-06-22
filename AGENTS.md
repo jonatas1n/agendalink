@@ -1,4 +1,4 @@
-# AgendaFácil — guia para agentes (Cursor)
+# agendalink — guia para agentes (Cursor)
 
 Monólito **Django 5** de agendamentos com **espaços compartilhados** (coworkings, clínicas, estúdios). Código da aplicação em `app/`; orquestração local na raiz com Docker Compose.
 
@@ -12,7 +12,7 @@ Monólito **Django 5** de agendamentos com **espaços compartilhados** (coworkin
 | Reservas (modelo + listagem/cancelamento HTML) | `app/agendamentos/` |
 | API JSON (`/api/…`) | `app/produtos/api.py`, `app/agendamentos/api.py`, rotas em `app/core/api_urls.py` |
 | Templates | `app/templates/` (por feature: `espacos/`, `produtos/`, …) |
-| CSS/JS global | `app/static/css/base.css`, `app/static/js/base.js` |
+| CSS/JS global | `app/static/css/base.css`, `app/static/js/base.js` (`window.agendalink`) |
 | Compose / env | `docker-compose.yml`, `.env` (copiar de `.env.example`) |
 
 ## Domínio (leia antes de modelar dados)
@@ -30,7 +30,7 @@ Auth: **User padrão do Django** (sem custom user model).
 - **Idioma:** textos de UI, labels, mensagens e chaves JSON voltadas ao usuário em **português (pt-BR)**. Estrutura Python/Django em inglês (`related_name`, nomes de funções internas).
 - **Views:** apenas **function-based views**; `@login_required` onde couber; permissões no objeto (`proprietario`, admin do espaço, cliente).
 - **API:** funções que retornam `JsonResponse` — **não** há DRF. Novas rotas JSON entram em `api.py` do app e em `core/api_urls.py`.
-- **Templates:** estender `base.html`; blocos `title`, `content`, `extra_css`, `extra_js`. Sem React/Vite; JS vanilla inline ou em `static/`.
+- **Templates:** estender `base.html`; blocos `title`, `content`, `extra_css`, `extra_js`. Sem React/Vite; JS vanilla inline ou em `static/`. Helpers compartilhados em `window.agendalink` (ex.: `mensagemErroApi`, `initCurrencyInputs`).
 - **Estilo:** variáveis CSS em `base.css`; **não** adicionar Bootstrap/Tailwind salvo pedido explícito.
 - **Early exit** em views/API: validar e retornar cedo; evitar `if/else` profundos.
 
