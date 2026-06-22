@@ -1,0 +1,15 @@
+---
+description: Docker Compose, Dockerfile e variáveis de ambiente
+globs: docker-compose.yml,app/Dockerfile,.env.example
+alwaysApply: false
+---
+
+# Docker e env
+
+- Compose na **raiz**; build context **`./app`**; volume `./app:/app`.
+- Serviço `web`: `env_file: .env` — `DATABASE_URL`, `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`.
+- Postgres (`db`): credenciais alinhadas ao `DATABASE_URL` (`host=db` dentro da rede Docker).
+- Startup web: `migrate` → `collectstatic` → `runserver` (dev).
+- **Não** commitar `.env`; manter `.env.example` atualizado.
+- Compose v2: **sem** chave `version:` no YAML.
+- Engine Docker (ex.: Rancher Desktop) deve estar rodando; socket local não é configurado no compose.

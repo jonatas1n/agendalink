@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Definições da loja{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="form-screen">
+    <div class="page-hero">
+      <p class="text-muted"><a href="{% url 'dashboard' %}">← Painel</a></p>
+      <h1>Definições da loja</h1>
+      <p class="text-muted">Essas informações aparecem na página pública de agendamento para seus clientes.</p>
+    </div>
+
+    <form method="post" class="card stack" id="storeSettingsForm">
+      {% csrf_token %}
+      <script type="application/json" id="storeSlugValidationConfig">{{ store_slug_validation_json|safe }}</script>
+
+      <h2 class="store-settings-section-title">Informações da loja</h2>
+
+      <div class="form-group">
+        <label for="id_slug">{{ form.slug.label }}</label>
+        <div class="store-slug-field">
+          <span class="store-slug-field__prefix text-muted">/loja/</span>
+          {{ form.slug }}
+        </div>
+        <span class="hint">{{ form.slug.help_text }}</span>
+        {% if profile.slug %}
+        <p class="hint" style="margin-top:.35rem;">
+          Link público:
+          <a href="{% url 'public_store' profile.slug %}" target="_blank" rel="noopener">
+            {% url 'public_store' profile.slug %}
+          </a>
+        </p>
+        {% endif %}
+        {% if form.slug.errors %}<span class="error">{{ form.slug.errors.0 }}</span>{% endif %}
+        <span class="error" data-slug-client-error hidden role="alert"></span>
+      </div>
+
+      <div class="form-group">
+        <label>ID da loja</label>
+        <p class="store-public-id" aria-readonly="true">{{ profile.public_id|default:"—" }}</p>
+        <span class="hint">Identificador único da sua loja (uso interno e integrações). Não é o endereço da URL.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="id_name">{{ form.name.label }}</label>
+        {{ form.name }}
+        <span class="hint">Nome exibido no topo da página de agendamento.</span>
+        {% if form.name.errors %}<span class="error">{{ form.name.errors.0 }}</span>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_tagline">{{ form.tagline.label }} <span class="text-muted" style="font-weight:400;">(opcional)</span></label>
+        {{ form.tagline }}
+        {% if form.tagline.errors %}<span class="error">{{ form.tagline.errors.0 }}</span>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_description">{{ form.description.label }} <span class="text-muted" style="font-weight:400;">(opcional)</span></label>
+        {{ form.description }}
+        {% if form.description.errors %}<span class="error">{{ form.description.errors.0 }}</span>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_public_email">{{ form.public_email.label }} <span class="text-muted" style="font-weight:400;">(opcional)</span></label>
+        {{ form.public_email }}
+        {% if form.public_email.errors %}<span class="error">{{ form.public_email.errors.0 }}</span>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_public_phone">{{ form.public_phone.label }} <span class="text-muted" style="font-weight:400;">(opcional)</span></label>
+        {{ form.public_phone }}
+        {% if form.public_phone.errors %}<span class="error">{{ form.public_phone.errors.0 }}</span>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_city">{{ form.city.label }} <span class="text-muted" style="font-weight:400;">(opcional)</span></label>
+        {{ form.city }}
+        {% if form.city.errors %}<span class="error">{{ form.city.errors.0 }}</span>{% endif %}
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Salvar alterações</button>
+        <a href="{% url 'dashboard' %}" class="btn btn-ghost">Cancelar</a>
+      </div>
+    </form>
+
+    <section class="card store-settings-plans" aria-labelledby="storePlansTitle">
+      <h2 id="storePlansTitle" class="store-settings-section-title">Planos</h2>
+      {% include "billing/_banner.html" %}
+      <dl class="store-settings-plans__meta">
+        <div>
+          <dt>Status</dt>
+          <dd>{{ subscription_status_label|default:subscription.status }}</dd>
+        </div>
+        {% if subscription.trial_ends_at and subscription.status == 'trialing' %}
+        <div>
+          <dt>Trial até</dt>
+          <dd>{{ subscription.trial_ends_at|date:"d/m/Y H:i" }}</dd>
+        </div>
+        {% endif %}
+        {% if subscription.current_period_end %}
+        <div>
+          <dt>Período atual até</dt>
+          <dd>{{ subscription.current_period_end|date:"d/m/Y H:i" }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+      <div class="store-settings-plans__actions">
+        {% if subscription.status == 'pending' or subscription.status == 'canceled' %}
+        <a href="{% url 'billing_choose_plan' %}" class="btn btn-primary btn-sm">Escolher plano</a>
+        {% elif subscription.status == 'trialing' %}
+        <a href="{% url 'billing_subscribe' %}" class="btn btn-primary btn-sm">Assinar antes do fim do trial</a>
+        {% elif subscription.pending_invoice_url %}
+        <a href="{{ subscription.pending_invoice_url }}" class="btn btn-primary btn-sm" target="_blank" rel="noopener">Ver fatura</a>
+        {% elif subscription.status == 'past_due' or subscription.status == 'blocked' %}
+        <a href="{% url 'billing_subscribe' %}" class="btn btn-primary btn-sm">Regularizar pagamento</a>
+        {% endif %}
+        {% if paid_plan and subscription.status != 'trialing' %}
+        <span class="text-muted store-settings-plans__price">Plano mensal: R$ {{ paid_plan.price }}</span>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.store-settings-section-title {
+  font-size: 1.05rem;
+  margin: 0 0 .25rem;
+}
+.store-settings-plans {
+  margin-top: 1.5rem;
+}
+.store-settings-plans__meta {
+  display: grid;
+  gap: .75rem 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  margin: .75rem 0 1rem;
+  font-size: .9rem;
+}
+.store-settings-plans__meta dt {
+  font-weight: 600;
+  margin: 0;
+}
+.store-settings-plans__meta dd {
+  margin: .15rem 0 0;
+  color: var(--c-muted, #666);
+}
+.store-settings-plans__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem;
+}
+.store-settings-plans__price { font-size: .875rem; }
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  padding-top: .25rem;
+}
+#storeSettingsForm input[type="text"],
+#storeSettingsForm input[type="email"],
+#storeSettingsForm textarea {
+  width: 100%;
+  padding: .55rem .7rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: .95rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/store_slug.js"></script>
+{% endblock %}

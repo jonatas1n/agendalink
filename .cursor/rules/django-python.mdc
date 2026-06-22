@@ -1,0 +1,22 @@
+---
+description: Padrões Python/Django nos apps do AgendaFácil
+globs: app/**/*.py
+alwaysApply: false
+---
+
+# Django / Python
+
+- **Views:** function-based; `get_object_or_404`; `@login_required` para área logada; checar ownership no início (early return).
+- **URLs:** nomes `snake_case` descritivos em PT (`espaco_publico`, `gerenciar_membros`); prefixo `api_` para JSON.
+- **Models:** campos e `verbose_name` em português; soft delete com `ativo=False` onde já usado.
+- **API:** `JsonResponse`, chaves `erro`, `disponivel`, etc.; erros HTTP coerentes (401 login, 409 conflito). Registrar em `core/api_urls.py`.
+- **Forms:** `ModelForm` em `forms.py`; se a view usa POST manual, alinhar ou usar form/formset existente.
+- **Imports:** app a app permitido (ex.: `agendamentos` importa `Produto`); evitar circularidade.
+- **Exceções:** `catch` nunca vazio — log ou re-raise.
+- **Migrations:** toda alteração de model gera migration no app correto.
+
+```python
+# Permissão típica (early exit)
+if produto.proprietario_id != request.user.id:
+    return redirect('dashboard')
+```

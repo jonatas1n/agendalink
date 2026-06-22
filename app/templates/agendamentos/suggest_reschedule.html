@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}Sugerir remarcação{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="form-screen form-screen--spaced">
+    <p class="text-muted" style="margin-bottom:.5rem;">
+      <a href="{% url 'list_appointments' %}">← Agendamentos</a>
+    </p>
+    <div class="page-hero" style="padding:0 0 1.25rem;border:none;margin-bottom:0;">
+      <h1>Sugerir remarcação</h1>
+      <p class="text-muted">
+        {{ appointment.display_customer_name }} · {{ appointment.product.name }}
+      </p>
+    </div>
+
+    <form method="post" class="card stack" id="suggestRescheduleForm">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+      <input type="hidden" name="starts_at" id="startsAtField" value="">
+
+      <div class="schedule-picker-current" role="status">
+        <strong>Horário atualmente marcado</strong>
+        {{ current_display }}
+      </div>
+
+      <section class="schedule-picker-section" aria-labelledby="pickHeading">
+        <h2 id="pickHeading">Escolha o horário sugerido</h2>
+        <p class="text-muted schedule-picker-hint">
+          Selecione uma data na agenda e depois o horário disponível. O cliente receberá este horário por e-mail.
+        </p>
+        <div id="calendarMount" class="mini-cal" aria-live="polite"></div>
+        <div class="schedule-picker-slots-wrap" id="slotsSection" hidden>
+          <h3 style="font-size:.95rem;margin:.75rem 0 .5rem;">Horários disponíveis</h3>
+          <div class="slots-grid" id="slotsMount"></div>
+        </div>
+        <p class="schedule-picker-preview" id="suggestedPreview" hidden></p>
+      </section>
+
+      <div class="form-group">
+        <label for="rescheduleMessage">Mensagem opcional ao cliente</label>
+        <textarea id="rescheduleMessage" name="message" rows="3" maxlength="500"
+                  placeholder="Ex.: Este horário funciona melhor para mim. Confirme se puder."></textarea>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:.75rem;">
+        <button type="submit" class="btn btn-primary" id="submitSuggest" disabled>
+          Enviar sugestão por e-mail
+        </button>
+        <a href="{% url 'list_appointments' %}" class="btn btn-ghost">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{ availability|json_script:"availability-data" }}
+<script>
+  window.SCHEDULE_CURRENT_DATE = "{{ current_date_key|escapejs }}";
+  window.SCHEDULE_CURRENT_TIME = "{{ current_time_label|escapejs }}";
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const availability = JSON.parse(document.getElementById('availability-data').textContent);
+  const currentDateKey = window.SCHEDULE_CURRENT_DATE;
+  const currentTimeLabel = window.SCHEDULE_CURRENT_TIME;
+
+  const calMount = document.getElementById('calendarMount');
+  const slotsSection = document.getElementById('slotsSection');
+  const slotsMount = document.getElementById('slotsMount');
+  const startsAtField = document.getElementById('startsAtField');
+  const preview = document.getElementById('suggestedPreview');
+  const submitBtn = document.getElementById('submitSuggest');
+  const form = document.getElementById('suggestRescheduleForm');
+
+  let currentMonth = new Date();
+  let selectedDate = null;
+  let selectedSlot = null;
+
+  function dateKeys() {
+    return Object.keys(availability);
+  }
+
+  function clearSelection() {
+    selectedDate = null;
+    selectedSlot = null;
+    startsAtField.value = '';
+    preview.hidden = true;
+    submitBtn.disabled = true;
+    slotsSection.hidden = true;
+    slotsMount.innerHTML = '';
+  }
+
+  function selectSlot(dateKey, slot) {
+    selectedDate = dateKey;
+    selectedSlot = slot;
+    startsAtField.value = `${dateKey}T${slot.start}:00`;
+    const partes = dateKey.split('-');
+    const legivel = new Date(partes[0], partes[1] - 1, partes[2])
+      .toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    preview.textContent = `Horário sugerido: ${legivel}, ${slot.start} – ${slot.end}`;
+    preview.hidden = false;
+    submitBtn.disabled = false;
+    slotsMount.querySelectorAll('.slot-btn').forEach((btn) => {
+      btn.classList.toggle('selecionado', btn.dataset.start === slot.start);
+    });
+  }
+
+  function renderSlots(dateKey) {
+    const slots = availability[dateKey] || [];
+    slotsMount.innerHTML = '';
+    if (slots.length === 0) {
+      slotsSection.hidden = true;
+      return;
+    }
+    slots.forEach((slot) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'slot-btn';
+      btn.dataset.start = slot.start;
+      btn.textContent = slot.start;
+      btn.addEventListener('click', () => selectSlot(dateKey, slot));
+      slotsMount.appendChild(btn);
+    });
+    slotsSection.hidden = false;
+    if (selectedDate === dateKey && selectedSlot) {
+      selectSlot(dateKey, selectedSlot);
+    }
+  }
+
+  function renderMonth(monthDate) {
+    const keys = dateKeys();
+    const ano = monthDate.getFullYear();
+    const m = monthDate.getMonth();
+    const nomeMes = monthDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const primeiroDia = new Date(ano, m, 1).getDay();
+    const totalDias = new Date(ano, m + 1, 0).getDate();
+
+    let daysHtml = '';
+    for (let i = 0; i < primeiroDia; i++) {
+      daysHtml += '<div class="cal-day cal-vazio"></div>';
+    }
+    for (let d = 1; d <= totalDias; d++) {
+      const dt = new Date(ano, m, d);
+      dt.setHours(0, 0, 0, 0);
+      const key = `${ano}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const passado = dt < hoje;
+      const disponivel = keys.includes(key);
+      let cls = 'cal-day';
+      if (passado) cls += ' cal-passado';
+      else if (!disponivel) cls += ' cal-indisponivel';
+      else cls += ' cal-day--clickable';
+      if (dt.getTime() === hoje.getTime()) cls += ' cal-hoje';
+      if (key === currentDateKey) cls += ' cal-atual';
+      if (selectedDate === key) cls += ' cal-selecionado';
+      const click = (!passado && disponivel)
+        ? `data-date="${key}"`
+        : '';
+      daysHtml += `<button type="button" class="${cls}" ${click} ${!disponivel || passado ? 'disabled' : ''}>${d}</button>`;
+    }
+
+    calMount.innerHTML = `
+      <div class="cal-header">
+        <button type="button" class="cal-nav" id="calPrev" aria-label="Mês anterior">‹</button>
+        <span>${nomeMes}</span>
+        <button type="button" class="cal-nav" id="calNext" aria-label="Próximo mês">›</button>
+      </div>
+      <div class="cal-grid">
+        ${['D','S','T','Q','Q','S','S'].map((d) => `<div class="cal-dow">${d}</div>`).join('')}
+        ${daysHtml}
+      </div>`;
+
+    calMount.querySelector('#calPrev').onclick = () => {
+      currentMonth = new Date(ano, m - 1, 1);
+      renderMonth(currentMonth);
+    };
+    calMount.querySelector('#calNext').onclick = () => {
+      currentMonth = new Date(ano, m + 1, 1);
+      renderMonth(currentMonth);
+    };
+
+    calMount.querySelectorAll('[data-date]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-date');
+        selectedDate = key;
+        selectedSlot = null;
+        startsAtField.value = '';
+        preview.hidden = true;
+        submitBtn.disabled = true;
+        renderMonth(currentMonth);
+        renderSlots(key);
+      });
+    });
+  }
+
+  const initialKey = dateKeys().includes(currentDateKey)
+    ? currentDateKey
+    : dateKeys()[0];
+  if (initialKey) {
+    const p = initialKey.split('-');
+    currentMonth = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, 1);
+    selectedDate = initialKey;
+    renderMonth(currentMonth);
+    renderSlots(initialKey);
+  } else {
+    renderMonth(currentMonth);
+  }
+
+  form.addEventListener('submit', (e) => {
+    if (!startsAtField.value) {
+      e.preventDefault();
+      window.alert('Selecione um horário sugerido na agenda.');
+    }
+  });
+})();
+</script>
+{% endblock %}

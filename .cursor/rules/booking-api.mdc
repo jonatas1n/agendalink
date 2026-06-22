@@ -1,0 +1,15 @@
+---
+description: Contrato da API de disponibilidade e agendamentos
+globs: app/produtos/api.py,app/agendamentos/api.py,app/templates/espacos/agendar_conversa.html
+alwaysApply: false
+---
+
+# Booking API
+
+**Slots:** `GET /api/produtos/<pk>/disponibilidade/` — usa `DisponibilidadeSemanal`, `BloqueioData`, agendamentos `pendente`/`confirmado`, `capacidade_simultanea`.
+
+**Criar:** `POST /api/agendamentos/criar/` — body JSON `{ produto_id, data_hora ISO, observacoes? }`; **usuário autenticado**; conflito → 409.
+
+**Verificar:** `GET /api/agendamentos/verificar/?produto_id=&data_hora=`
+
+Alterar geração de slots ou validação: sincronizar **produtos/api**, **agendamentos/api** e **agendar_conversa.html**. Cuidado com datetime naive vs `timezone.make_aware` (`America/Sao_Paulo`).

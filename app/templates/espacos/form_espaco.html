@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="form-screen">
+  <div class="page-hero">
+    {% if space %}<p class="text-muted"><a href="{% url 'public_space' space.slug %}">Ver página pública</a></p>{% endif %}
+    <h1>{{ title }}</h1>
+  </div>
+
+    <form method="post" enctype="multipart/form-data" class="card stack">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>{{ form.name.label }}</label>
+        {{ form.name }}
+        {% if form.name.errors %}<span class="error">{{ form.name.errors.0 }}</span>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.description.label }}</label>
+        {{ form.description }}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.address.label }}</label>
+        {{ form.address }}
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>{{ form.logo.label }}</label>
+          {{ form.logo }}
+          <span class="hint">PNG ou JPG. Aparece na página pública.</span>
+        </div>
+        <div class="form-group">
+          <label>{{ form.cover_photo.label }}</label>
+          {{ form.cover_photo }}
+          <span class="hint">Imagem de destaque no topo da página.</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="toggle-label">
+          <span class="toggle">
+            {{ form.collective_schedule_active }}
+            <span class="toggle-slider"></span>
+          </span>
+          {{ form.collective_schedule_active.label }}
+        </label>
+        <span class="hint">Se ativo, membros do espaço poderão ver os agendamentos uns dos outros.</span>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="/dashboard/" class="btn btn-ghost">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-actions { display:flex; gap:1rem; }
+.toggle-label input[type=checkbox] { position:absolute; opacity:0; width:0; height:0; }
+</style>
+{% endblock %}

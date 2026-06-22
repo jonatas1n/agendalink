@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Meus agendamentos{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-hero">
+    <h1>Meus agendamentos</h1>
+  </div>
+  <div class="card table-scroll" style="padding:0;">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Serviço</th>
+          <th>Data</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appointments %}
+        <tr>
+          <td>{{ a.display_customer_name }}</td>
+          <td><strong>{{ a.product.name }}</strong></td>
+          <td>{{ a.starts_at|date:"d/m/Y H:i" }}</td>
+          <td>
+            {% if a.status == 'confirmado' %}<span class="badge badge-green">Confirmado</span>
+            {% elif a.status == 'pendente' %}<span class="badge badge-yellow">Pendente</span>
+            {% elif a.status == 'cancelado' %}<span class="badge badge-red">Cancelado</span>
+            {% else %}<span class="badge badge-gray">{{ a.status }}</span>{% endif %}
+          </td>
+          {% include "agendamentos/_appointment_options_cell.html" with appointment=a %}
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;padding:2rem;" class="text-muted">Nenhum agendamento.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "agendamentos/_appointment_modal.html" %}
+{% endblock %}

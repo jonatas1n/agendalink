@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Membros — {{ space.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="form-screen">
+  <div class="page-hero">
+    <p class="text-muted"><a href="{% url 'edit_space' space.slug %}">← Configurações do espaço</a></p>
+    <h1>Membros de {{ space.name }}</h1>
+  </div>
+
+  <!-- Toggle agenda coletiva -->
+  <div class="card agenda-toggle-card">
+    <div class="agenda-toggle-info">
+      <h3>Agenda coletiva</h3>
+      <p class="text-muted">
+        {% if space.collective_schedule_active %}
+          <span class="badge badge-green">Ativa</span> — Membros podem ver os agendamentos uns dos outros.
+        {% else %}
+          <span class="badge badge-gray">Inativa</span> — Somente o administrador vê todos os agendamentos.
+        {% endif %}
+      </p>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="toggle_agenda">
+      <button type="submit" class="btn {% if space.collective_schedule_active %}btn-ghost{% else %}btn-success{% endif %}">
+        {% if space.collective_schedule_active %}Desativar{% else %}Ativar{% endif %}
+      </button>
+    </form>
+  </div>
+
+  <!-- Convidar -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <h3 style="margin-bottom:1rem;">Adicionar membro</h3>
+    <form method="post" class="invite-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="convidar">
+      <div class="form-group" style="flex:1;">
+        <input type="email" name="email" placeholder="E-mail do profissional cadastrado…" required>
+        <span class="hint">O profissional precisa ter uma conta no AgendaFácil.</span>
+      </div>
+      <button type="submit" class="btn btn-primary">Adicionar</button>
+    </form>
+  </div>
+
+  <!-- Lista de membros -->
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table>
+      <thead>
+        <tr>
+          <th>Profissional</th>
+          <th>Papel</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in members %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:.75rem;">
+              <div class="avatar">{{ m.user.first_name|slice:":1" }}{{ m.user.last_name|slice:":1" }}</div>
+              <div>
+                <strong>{{ m.user.get_full_name|default:m.user.username }}</strong><br>
+                <small class="text-muted">{{ m.user.email }}</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            {% if m.role == 'admin' %}<span class="badge badge-blue">Admin</span>
+            {% else %}<span class="badge badge-gray">Membro</span>{% endif %}
+          </td>
+          <td>
+            {% if m.status == 'ativo' %}<span class="badge badge-green">Ativo</span>
+            {% else %}<span class="badge badge-gray">{{ m.status }}</span>{% endif %}
+          </td>
+          <td>
+            {% if m.user != request.user %}
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="remover">
+              <input type="hidden" name="membro_id" value="{{ m.pk }}">
+              <button type="submit" class="btn btn-sm btn-ghost"
+                onclick="return confirm('Remover {{ m.user.get_full_name }} do espaço?')">
+                Remover
+              </button>
+            </form>
+            {% else %}
+              <span class="text-muted" style="font-size:.8rem;">Você</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-muted" style="text-align:center;padding:2rem;">Nenhum membro ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if space.collective_schedule_active %}
+  <div style="margin-top:1.5rem;">
+    <a href="{% url 'collective_schedule' space.slug %}" class="btn btn-ghost">Ver agenda coletiva →</a>
+  </div>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.agenda-toggle-card { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+.invite-form { display:flex; gap:1rem; align-items:flex-end; flex-wrap:wrap; }
+.invite-form .form-group { flex:1; min-width:200px; }
+</style>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ membro.user.get_full_name }} — {{ space.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <nav class="breadcrumb">
+    <a href="{% url 'public_space' space.slug %}">{{ space.name }}</a>
+    <span>›</span>
+    <span>{{ membro.user.get_full_name|default:membro.user.username }}</span>
+  </nav>
+
+  <div class="prof-header card">
+    <div class="prof-identidade">
+      {% if membro.profile_photo %}
+        <img src="{{ membro.profile_photo.url }}" alt="" class="prof-foto">
+      {% else %}
+        <div class="avatar avatar-lg">{{ membro.user.first_name|slice:":1" }}{{ membro.user.last_name|slice:":1" }}</div>
+      {% endif %}
+      <div>
+        <h1>{{ membro.user.get_full_name|default:membro.user.username }}</h1>
+        {% if membro.specialty %}<span class="badge badge-blue">{{ membro.specialty }}</span>{% endif %}
+        {% if membro.bio %}<p>{{ membro.bio }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <section class="servicos-section">
+    <h2>Serviços disponíveis</h2>
+    {% if products %}
+      <div class="servicos-lista">
+        {% for p in products %}
+        <div class="servico-item card">
+          <div class="servico-info">
+            <h3>{{ p.name }}</h3>
+            {% if p.description %}<p class="text-muted">{{ p.description }}</p>{% endif %}
+            <div class="servico-meta">
+              <span class="preco">{{ p.prices_summary }}</span>
+            </div>
+          </div>
+          <a href="{% url 'book_conversation' space.slug p.pk %}" class="btn btn-primary">
+            Agendar
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">Nenhum serviço cadastrado ainda.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.breadcrumb { display:flex; align-items:center; gap:.5rem; font-size:.875rem; color:var(--c-muted); margin:1.5rem 0; }
+.breadcrumb a { color:var(--c-muted); }
+.breadcrumb a:hover { color:var(--c-primary); }
+
+.prof-header { margin-bottom:2rem; }
+.prof-identidade { display:flex; align-items:flex-start; gap:1.25rem; flex-wrap:wrap; }
+.prof-foto { width:72px; height:72px; border-radius:50%; object-fit:cover; }
+.prof-identidade h1 { margin-bottom:.4rem; }
+.prof-identidade p { color:var(--c-muted); margin-top:.5rem; }
+
+.servicos-section h2 { margin-bottom:1.25rem; }
+.servicos-lista { display:flex; flex-direction:column; gap:1rem; }
+.servico-item { display:flex; align-items:center; justify-content:space-between; gap:1.5rem; flex-wrap:wrap; }
+.servico-info { flex:1; }
+.servico-info h3 { margin-bottom:.3rem; }
+.servico-meta { display:flex; align-items:center; gap:.75rem; margin-top:.6rem; flex-wrap:wrap; }
+.preco { font-weight:600; color:var(--c-primary); font-size:1.05rem; }
+</style>
+{% endblock %}

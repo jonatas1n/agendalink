@@ -1,0 +1,84 @@
+# --- Ambiente e segredos ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+*.manifest
+*.spec
+
+# Virtualenvs
+.venv/
+venv/
+ENV/
+env/
+
+# --- Cache e ferramentas Python ---
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# --- Django ---
+app/staticfiles/
+app/media/
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# --- Node / Cypress (E2E) ---
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+cypress/.cache/
+
+# --- IDEs e SO ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Docker (artefatos locais, não o compose) ---
+*.log.local
+
+# --- Misc ---
+*.bak
+*.tmp
+*.temp

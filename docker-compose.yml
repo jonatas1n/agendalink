@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: agendamento_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: agendamento
+      POSTGRES_USER: agendamento_user
+      POSTGRES_PASSWORD: agendamento_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agendamento_user -d agendamento"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: agendamento_web
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./app:/app
+      - media_files:/app/media
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_e2e &&
+             python manage.py collectstatic --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/')\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  cypress:
+    build:
+      context: ./cypress
+      dockerfile: Dockerfile
+    container_name: agendamento_cypress
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      CYPRESS_BASE_URL: http://web:8000
+    volumes:
+      - ./cypress:/e2e
+      - cypress_cache:/root/.cache/Cypress
+    profiles:
+      - e2e
+
+volumes:
+  postgres_data:
+  media_files:
+  cypress_cache:

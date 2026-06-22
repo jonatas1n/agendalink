@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Cancelar agendamento{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="form-screen form-screen--narrow form-screen--spaced">
+    <div class="card" style="text-align:center;">
+      <p style="font-size:2rem;">❓</p>
+      <h2 style="margin-bottom:.5rem;">Cancelar agendamento?</h2>
+      <p class="text-muted">
+        {{ appointment.product.name }}<br>
+        {{ appointment.starts_at|date:"d/m/Y" }} às {{ appointment.starts_at|date:"H:i" }}
+      </p>
+      <div style="display:flex;gap:1rem;justify-content:center;margin-top:1.5rem;">
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Sim, cancelar</button>
+        </form>
+        <a href="{% url 'list_appointments' %}" class="btn btn-ghost">Voltar</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

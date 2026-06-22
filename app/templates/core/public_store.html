@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ store.display_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-hero">
+    <h1>{{ store.display_name }}</h1>
+    {% if store.tagline %}<p class="text-muted">{{ store.tagline }}</p>{% endif %}
+    {% if store.city %}<p class="text-muted">{{ store.city }}</p>{% endif %}
+  </div>
+
+  {% if products %}
+  <div class="servicos-grid">
+    {% for p in products %}
+    <article class="card servico-card">
+      <div class="servico-card__body">
+        <h2 class="servico-card__title">{{ p.name }}</h2>
+        <p class="servico-card__meta text-muted">{{ p.prices_summary }}</p>
+        {% if p.description %}
+        <p class="text-muted" style="font-size:.875rem;margin-top:.5rem;">{{ p.description|truncatewords:24 }}</p>
+        {% endif %}
+      </div>
+      <div class="servico-card__actions">
+        <a href="{% url 'book_store_product' store.slug p.pk %}" class="btn btn-primary btn-sm">Agendar</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-muted empty-state">Nenhum serviço disponível no momento.</p>
+  {% endif %}
+</div>
+{% endblock %}

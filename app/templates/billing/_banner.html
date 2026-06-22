@@ -1,0 +1,12 @@
+{% if subscription_snapshot.banner_message %}
+<div class="billing-banner billing-banner--{{ subscription_snapshot.banner_level|default:'info' }}" role="status">
+  <p>{{ subscription_snapshot.banner_message }}</p>
+  {% if subscription_snapshot.subscription.pending_invoice_url %}
+  <p><a href="{{ subscription_snapshot.subscription.pending_invoice_url }}" class="btn btn-sm btn-primary">Ver fatura</a></p>
+  {% elif subscription_snapshot.subscription.status == 'pending' or subscription_snapshot.subscription.status == 'canceled' %}
+  <p><a href="{% url 'billing_choose_plan' %}" class="btn btn-sm btn-primary">Escolher plano</a></p>
+  {% elif subscription_snapshot.subscription.status == 'past_due' or subscription_snapshot.subscription.status == 'blocked' %}
+  <p><a href="{% url 'billing_subscribe' %}" class="btn btn-sm btn-primary">Regularizar assinatura</a></p>
+  {% endif %}
+</div>
+{% endif %}

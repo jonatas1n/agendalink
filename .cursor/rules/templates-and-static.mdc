@@ -1,0 +1,15 @@
+---
+description: Templates Django, CSS e JS vanilla do AgendaFácil
+globs: app/templates/**/*,app/static/**/*
+alwaysApply: false
+---
+
+# Templates e static
+
+- Estender **`base.html`**: blocos `title`, `content`, `extra_css`, `extra_js`.
+- Organização: `app/templates/<feature>/` espelhando o app (espacos, produtos, agendamentos).
+- **CSS:** reutilizar classes e variáveis `:root` em `static/css/base.css`; evitar frameworks CSS.
+- **JS:** global mínimo em `static/js/base.js`; lógica de página em `extra_js` (vanilla DOM).
+- **Chat de agendamento:** `espacos/agendar_conversa.html` — manter `window.PRODUTO_ID`, `CSRF_TOKEN`, fetches para `/api/produtos/.../disponibilidade/` e `POST /api/agendamentos/criar/`.
+- Copy e `lang` pt-BR; formatação de datas com locale pt-BR no cliente quando aplicável.
+- Não criar pasta `components/` unless pedido; preferir includes Django (`{% include %}`) se houver repetição.

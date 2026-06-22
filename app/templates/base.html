@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Agenda{% endblock %} — AgendaFácil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/base.css">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% block site_header %}
+<header class="site-header">
+  <div class="container">
+    <a href="/" class="logo">AgendaFácil</a>
+    <nav class="site-nav">
+      {% if user.is_authenticated %}
+        <a href="/dashboard/">Meu painel</a>
+        <a href="/auth/logout/" class="btn btn-ghost">Sair</a>
+      {% else %}
+        <a href="/auth/login/">Entrar</a>
+        <a href="/auth/cadastro/" class="btn btn-primary">Criar conta</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+{% endblock %}
+
+{% if messages %}
+<div class="messages">
+  <div class="container">
+    {% for msg in messages %}
+      <div class="message message--{{ msg.tags }}">{{ msg }}</div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>AgendaFácil &copy; 2025</p>
+  </div>
+</footer>
+
+<script src="/static/js/base.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

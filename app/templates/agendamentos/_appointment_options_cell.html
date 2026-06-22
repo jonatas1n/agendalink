@@ -1,0 +1,25 @@
+<td class="appointment-actions-cell">
+  <button type="button"
+          class="btn btn-ghost btn-sm btn-icon appointment-options-btn"
+          title="Detalhes e opções"
+          aria-label="Detalhes e opções do agendamento"
+          data-id="{{ appointment.pk }}"
+          data-name="{{ appointment.display_customer_name|escape }}"
+          data-service="{{ appointment.product.name|escape }}"
+          data-starts="{{ appointment.starts_at|date:'d/m/Y' }} às {{ appointment.starts_at|date:'H:i' }}"
+          data-ends="{{ appointment.ends_at|date:'H:i' }}"
+          data-status="{{ appointment.get_status_display|escape }}"
+          data-status-key="{{ appointment.status }}"
+          data-email="{{ appointment.display_guest_email|escape }}"
+          data-phone="{{ appointment.display_guest_phone|escape }}"
+          data-cpf="{{ appointment.display_guest_cpf|escape }}"
+          data-cancel-url="{% url 'cancel_appointment' appointment.pk %}"
+          data-suggest-url="{% url 'suggest_reschedule' appointment.pk %}"
+          data-has-email="{% if appointment.recipient_email %}1{% else %}0{% endif %}"
+          data-can-suggest="{% if appointment.product.owner_id == request.user.id and appointment.status != 'cancelado' %}1{% else %}0{% endif %}">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+    </svg>
+  </button>
+</td>

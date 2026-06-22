@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block title %}Painel{% endblock %}
+
+{% block content %}
+<div class="container">
+  {% include "billing/_banner.html" %}
+  <div class="page-hero dash-hero">
+    <div class="dash-hero-intro">
+      <h1>Olá, {{ request.user.first_name|default:request.user.username }}</h1>
+      <p class="text-muted">Gerencie seus serviços e agendamentos.</p>
+    </div>
+    <div class="dash-hero-actions">
+      <div class="dash-hero-actions__row">
+        {% if booking_link %}
+        <button type="button" class="btn btn-primary" id="btnLinkAgendamento"
+                data-url="{{ booking_link }}"
+                aria-haspopup="dialog"
+                aria-controls="bookingLinkModal">
+          <svg class="btn-inline-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          Link de agendamento
+        </button>
+        {% endif %}
+        <a href="{% url 'store_settings' %}" class="btn btn-ghost">
+          <svg class="btn-inline-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          Definições da loja
+        </a>
+      </div>
+      {% if not booking_link %}
+      <p class="dash-hero-link-hint text-muted">Cadastre um serviço para gerar o link de agendamento.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="dash-main">
+
+    <!-- Meus serviços -->
+    <section class="dash-col">
+      <div class="dash-section-header">
+        <h2>Meus serviços</h2>
+        <a href="{% url 'create_product' %}" class="btn btn-primary btn-sm">+ Novo serviço</a>
+      </div>
+      <div class="servicos-grid">
+        {% for p in request.user.products.all %}
+        <article class="card servico-card">
+          <div class="servico-card__body">
+            <h3 class="servico-card__title">{{ p.name }}</h3>
+            <p class="servico-card__meta text-muted">{{ p.prices_summary }}</p>
+          </div>
+          <div class="servico-card__actions">
+            <a href="{% url 'edit_product' p.pk %}" class="btn btn-ghost btn-sm">Editar</a>
+            {% if not p.is_outros %}
+            <a href="{% url 'manage_availability' p.pk %}" class="btn btn-ghost btn-sm">Horários</a>
+            {% endif %}
+          </div>
+        </article>
+        {% empty %}
+        <p class="text-muted empty-state servicos-grid__empty">Nenhum serviço cadastrado ainda.<br>
+          <a href="{% url 'create_product' %}">Criar primeiro serviço →</a>
+        </p>
+        {% endfor %}
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Agendamentos -->
+  <section style="margin-top:2rem;">
+    <div class="dash-section-header">
+      <h2>Meus agendamentos</h2>
+      <a href="{% url 'list_appointments' %}" class="btn btn-ghost btn-sm">Ver todos</a>
+    </div>
+    <div class="card table-scroll table-scroll--wide" style="padding:0;">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Serviço</th>
+            <th class="hide-mobile">Data</th>
+            <th>
+              <span class="hide-mobile">Horário</span>
+              <span class="show-mobile-only">Data</span>
+            </th>
+            <th>Status</th>
+            <th><span class="visually-hidden">Opções</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in appointments %}
+          <tr>
+            <td>{{ a.display_customer_name }}</td>
+            <td><strong>{{ a.product.name }}</strong></td>
+            <td class="hide-mobile">{{ a.starts_at|date:"d/m/Y" }}</td>
+            <td>
+              <span class="hide-mobile">{{ a.starts_at|date:"H:i" }}</span>
+              <span class="show-mobile-only">{{ a.starts_at|date:"d/m/Y H:i" }}</span>
+            </td>
+            <td>
+              {% if a.status == 'confirmado' %}<span class="badge badge-green">Confirmado</span>
+              {% elif a.status == 'pendente' %}<span class="badge badge-yellow">Pendente</span>
+              {% elif a.status == 'cancelado' %}<span class="badge badge-red">Cancelado</span>
+              {% else %}<span class="badge badge-gray">{{ a.status }}</span>{% endif %}
+            </td>
+            {% include "agendamentos/_appointment_options_cell.html" with appointment=a %}
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="text-align:center;padding:2rem;" class="text-muted">Nenhum agendamento ainda.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+{% if booking_link %}
+<div id="bookingLinkModal" class="appointment-modal" hidden aria-hidden="true">
+  <div class="appointment-modal__backdrop" data-close-booking-link-modal></div>
+  <div class="appointment-modal__panel card" role="dialog" aria-modal="true" aria-labelledby="bookingLinkModalTitle">
+    <header class="appointment-modal__header">
+      <h2 id="bookingLinkModalTitle">Link de agendamento</h2>
+      <button type="button" class="btn btn-ghost btn-sm btn-icon" data-close-booking-link-modal aria-label="Fechar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </header>
+    {% if booking_link_description %}
+      <p class="text-muted booking-link-modal__lead">{{ booking_link_description }}</p>
+    {% endif %}
+    <p class="message message--success booking-link-modal__copied" id="bookingLinkCopiedNotice" hidden>
+      Link copiado para a área de transferência.
+    </p>
+    <label class="visually-hidden" for="bookingLinkInput">URL de agendamento</label>
+    <div class="booking-link-field">
+      <input type="text" id="bookingLinkInput" class="booking-link-field__input" readonly
+             value="{{ booking_link }}" autocomplete="off" spellcheck="false">
+      <button type="button" class="btn btn-primary btn-sm" id="btnCopyBookingLink">Copiar</button>
+    </div>
+    <p class="text-muted appointment-modal__hint">Envie este link para seus clientes agendarem online.</p>
+  </div>
+</div>
+{% endif %}
+
+{% include "agendamentos/_appointment_modal.html" %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.dash-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+.dash-hero-intro { flex: 1; min-width: 200px; }
+.dash-hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .35rem;
+  flex-shrink: 0;
+}
+.dash-hero-actions__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  justify-content: flex-end;
+}
+.dash-hero-link-hint { font-size: .8rem; margin: 0; text-align: right; max-width: 220px; }
+.dash-hero-unavailable-title { font-size: .875rem; font-weight: 500; text-align: right; }
+.dash-hero-actions--muted { gap: .2rem; }
+.dash-main { margin-inline: auto; }
+.empty-state { padding: 1.5rem 0; margin: 0; }
+.booking-link-modal__lead { font-size: .9rem; margin: 0 0 .75rem; }
+.booking-link-modal__copied { margin: 0 0 .75rem; padding: .5rem .75rem; font-size: .875rem; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const btnOpen = document.getElementById('btnLinkAgendamento');
+  const modal = document.getElementById('bookingLinkModal');
+  if (!btnOpen || !modal) return;
+
+  const input = document.getElementById('bookingLinkInput');
+  const btnCopy = document.getElementById('btnCopyBookingLink');
+  const copiedNotice = document.getElementById('bookingLinkCopiedNotice');
+  const url = btnOpen.dataset.url || (input && input.value) || '';
+
+  async function copyLink() {
+    if (!url) return false;
+    try {
+      await navigator.clipboard.writeText(url);
+      return true;
+    } catch {
+      if (!input) return false;
+      input.focus();
+      input.select();
+      try {
+        return document.execCommand('copy');
+      } catch {
+        return false;
+      }
+    }
+  }
+
+  function showCopiedNotice() {
+    if (!copiedNotice) return;
+    copiedNotice.hidden = false;
+  }
+
+  function openModal() {
+    if (input) {
+      input.value = url;
+    }
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    copyLink();
+    showCopiedNotice();
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    if (copiedNotice) copiedNotice.hidden = true;
+  }
+
+  btnOpen.addEventListener('click', openModal);
+
+  if (btnCopy) {
+    btnCopy.addEventListener('click', async () => {
+      const ok = await copyLink();
+      if (ok) showCopiedNotice();
+    });
+  }
+
+  modal.querySelectorAll('[data-close-booking-link-modal]').forEach((el) => {
+    el.addEventListener('click', closeModal);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.hidden) closeModal();
+  });
+})();
+</script>
+{% endblock %}

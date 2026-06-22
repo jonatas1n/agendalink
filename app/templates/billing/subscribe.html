@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Assinar plano{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="form-screen">
+    <div class="page-hero">
+      <p class="text-muted"><a href="{% url 'billing_choose_plan' %}">← Voltar aos planos</a></p>
+      <h1>Assinar AgendaFácil</h1>
+      {% if paid_plan %}
+      <p class="text-muted">Plano mensal: <strong>R$ {{ paid_plan.price }}</strong></p>
+      {% endif %}
+    </div>
+
+    <form method="post" class="card stack">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="id_cpf_cnpj">{{ form.cpf_cnpj.label }}</label>
+        {{ form.cpf_cnpj }}
+        <span class="hint">Obrigatório para emissão da cobrança no Asaas.</span>
+        {% if form.cpf_cnpj.errors %}<span class="error">{{ form.cpf_cnpj.errors.0 }}</span>{% endif %}
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Continuar para pagamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-actions { display: flex; gap: .75rem; flex-wrap: wrap; }
+#id_cpf_cnpj {
+  width: 100%;
+  padding: .55rem .7rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+}
+</style>
+{% endblock %}

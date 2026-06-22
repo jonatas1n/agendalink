@@ -1,0 +1,771 @@
+{% extends "base.html" %}
+{% block title %}Agendar — {{ product.name }}{% endblock %}
+
+{% block site_header %}
+<header class="site-header site-header--booking">
+  <div class="container site-header--booking__inner">
+    <a href="/" class="logo">AgendaFácil</a>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="container booking-page">
+  <div class="chat-layout">
+    <aside class="chat-aside card" aria-label="Serviços disponíveis">
+      <header class="booking-store">
+        <h2 class="booking-store__name">{{ store.display_name }}</h2>
+        {% if store.tagline %}
+          <p class="booking-store__tagline text-muted">{{ store.tagline }}</p>
+        {% endif %}
+        {% if store.description %}
+          <p class="booking-store__desc text-muted">{{ store.description|truncatewords:40 }}</p>
+        {% endif %}
+        <ul class="booking-store__contact">
+          {% if store.city %}
+            <li>{{ store.city }}</li>
+          {% endif %}
+          {% if store.public_email %}
+            <li><a href="mailto:{{ store.public_email }}">{{ store.public_email }}</a></li>
+          {% endif %}
+          {% if store.public_phone %}
+            <li>{{ store.public_phone }}</li>
+          {% endif %}
+        </ul>
+      </header>
+
+      <h2 class="booking-aside-title">Serviços</h2>
+      <ul class="booking-product-list">
+        {% for p in owner_products %}
+        <li class="booking-product-list__item{% if p.pk == product.pk %} is-active{% endif %}">
+          <a href="{% if store.slug %}{% url 'book_store_product' store.slug p.pk %}{% else %}{% url 'book_product' p.pk %}{% endif %}" class="booking-product-list__link">
+            <span class="booking-product-list__name">{{ p.name }}</span>
+            <span class="booking-product-list__meta text-muted">{{ p.prices_summary }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+
+      <hr class="divider">
+      <div class="booking-product-detail">
+        <h3 class="booking-product-detail__title">{{ product.name }}</h3>
+        {% if product.is_outros %}
+        <div class="resumo-item">
+          <span class="text-muted">Atendimento</span>
+          <strong>{{ product.get_contact_channel_display }}</strong>
+        </div>
+        {% else %}
+        <div class="resumo-item">
+          <span class="text-muted">Duração</span>
+          <strong>{{ product.duration_display }}</strong>
+        </div>
+        <div class="resumo-item resumo-precos">
+          <span class="text-muted">Valor{% if product.prices.count > 1 %}es{% endif %}</span>
+          <div class="resumo-precos-lista">
+            {% for op in product.prices.all %}
+              <strong class="preco">{{ op.format_price }} <span class="text-muted" style="font-weight:500;">· {{ op.variation_label }}</span></strong>
+            {% empty %}
+              <strong class="preco">{{ product.format_price }}</strong>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        {% if product.description %}
+          <p class="text-muted booking-product-detail__desc">{{ product.description|linebreaksbr }}</p>
+        {% endif %}
+      </div>
+    </aside>
+
+    <div class="chat-wrap">
+      {% if product.is_outros %}
+      <div class="card contact-outros-panel">
+        <h2 class="contact-outros-panel__title">Entre em contato</h2>
+        {% if product.description %}
+        <div class="contact-outros-panel__desc">{{ product.description|linebreaksbr }}</div>
+        {% endif %}
+        <div class="contact-outros-actions">
+          {% if product.contact_uses_email and store.public_email %}
+          <a href="mailto:{{ store.public_email }}?subject={{ product.name|urlencode }}" class="btn btn-primary">
+            Enviar e-mail
+          </a>
+          {% endif %}
+          {% if product.contact_uses_whatsapp and whatsapp_url %}
+          <a href="{{ whatsapp_url }}" class="btn btn-ghost" target="_blank" rel="noopener">
+            WhatsApp
+          </a>
+          {% endif %}
+        </div>
+        {% if contact_channels_missing %}
+        <p class="text-muted contact-outros-panel__warn">
+          O profissional ainda não configurou todos os canais de contato. Tente novamente mais tarde.
+        </p>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="chat-box" id="chatBox"></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Dados passados ao JS -->
+<script>
+  window.PRODUCT_ID  = {{ product.pk }};
+  window.LOGGED_IN = {% if logged_in_user %}true{% else %}false{% endif %};
+  {% if logged_in_user %}
+  window.USER_NAME = "{{ logged_in_user.get_full_name|default:logged_in_user.first_name|default:''|escapejs }}";
+  window.USER_EMAIL = "{{ logged_in_user.email|default:''|escapejs }}";
+  {% else %}
+  window.USER_NAME = "";
+  window.USER_EMAIL = "";
+  {% endif %}
+  window.CSRF_TOKEN  = "{{ csrf_token }}";
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Layout */
+.booking-page { padding-bottom: 2rem; }
+.chat-layout { display:flex; gap:1.5rem; align-items:flex-start; padding: 1rem 0 2rem; }
+.chat-aside { width:260px; flex-shrink:0; position:sticky; top: calc(var(--header-h, 56px) + .75rem); }
+.booking-store { margin-bottom: 1rem; padding-bottom: .75rem; border-bottom: 1px solid var(--c-border); }
+.booking-store__name { font-size: 1.1rem; margin: 0 0 .35rem; line-height: 1.3; }
+.booking-store__tagline { font-size: .875rem; margin: 0 0 .5rem; line-height: 1.45; }
+.booking-store__desc { font-size: .8rem; margin: 0 0 .5rem; line-height: 1.5; }
+.booking-store__contact {
+  list-style: none; margin: .35rem 0 0; padding: 0;
+  font-size: .78rem; color: var(--c-muted); display: flex; flex-direction: column; gap: .2rem;
+}
+.booking-store__contact a { font-size: inherit; word-break: break-all; }
+.booking-aside-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--c-muted); margin: 0 0 .5rem; font-weight: 600; }
+.booking-product-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
+.booking-product-list__link {
+  display: block; padding: .55rem .65rem; border-radius: var(--radius);
+  text-decoration: none; color: inherit; border: 1px solid transparent;
+  transition: background .12s, border-color .12s;
+}
+.booking-product-list__link:hover { background: var(--c-surface); text-decoration: none; }
+.booking-product-list__item.is-active .booking-product-list__link {
+  border-color: var(--c-primary); background: #eff6ff;
+}
+.booking-product-list__name { display: block; font-weight: 600; font-size: .9rem; line-height: 1.35; }
+.booking-product-list__meta { display: block; font-size: .78rem; margin-top: .15rem; line-height: 1.3; }
+.booking-product-detail__title { font-size: 1rem; margin: 0 0 .65rem; }
+.booking-product-detail__desc { margin-top: .75rem; font-size: .875rem; line-height: 1.5; }
+.chat-aside h3 { margin-bottom:.25rem; }
+.divider { border:none; border-top:1px solid var(--c-border); margin:.875rem 0; }
+.resumo-item { display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem; font-size:.9rem; }
+.resumo-precos { flex-direction:column; align-items:stretch; gap:.35rem; }
+.resumo-precos-lista { display:flex; flex-direction:column; gap:.25rem; text-align:right; }
+.preco { color:var(--c-primary); }
+.chat-wrap { flex:1; min-width:0; }
+.contact-outros-panel { padding: 1.25rem 1.35rem; }
+.contact-outros-panel__title { margin: 0 0 .75rem; font-size: 1.15rem; }
+.contact-outros-panel__desc { font-size: .95rem; line-height: 1.55; color: var(--c-text); margin-bottom: 1.25rem; }
+.contact-outros-actions { display: flex; flex-wrap: wrap; gap: .65rem; }
+.contact-outros-panel__warn { margin-top: 1rem; font-size: .875rem; }
+
+/* Chat box */
+.chat-box {
+  background: #ece5dd; /* tom WhatsApp */
+  border-radius: var(--radius-lg);
+  min-height: 420px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  font-size: .95rem;
+}
+
+/* Balões */
+.balao {
+  max-width: 78%;
+  padding: .65rem .95rem;
+  border-radius: 12px;
+  line-height: 1.5;
+  position: relative;
+  word-break: break-word;
+}
+.balao-bot {
+  background: #fff;
+  align-self: flex-start;
+  border-top-left-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.1);
+}
+.balao-user {
+  background: #dcf8c6;
+  align-self: flex-end;
+  border-top-right-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.1);
+}
+.balao-time {
+  font-size: .7rem; color: #aaa; text-align: right; margin-top: .25rem;
+}
+.digitando {
+  background: #fff;
+  align-self: flex-start;
+  padding: .65rem 1rem;
+  border-radius: 12px;
+  border-top-left-radius: 2px;
+}
+.dot-flashing { display:inline-flex; gap:4px; align-items:center; height:18px; }
+.dot-flashing span {
+  width:7px; height:7px; background:#aaa; border-radius:50%;
+  animation: blink 1.2s infinite;
+}
+.dot-flashing span:nth-child(2) { animation-delay:.2s; }
+.dot-flashing span:nth-child(3) { animation-delay:.4s; }
+@keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
+
+/* Opções clicáveis */
+.opcoes { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.25rem; align-self:flex-start; max-width:90%; }
+.opcao-btn {
+  background:#fff; border:1.5px solid var(--c-primary); color:var(--c-primary);
+  border-radius:999px; padding:.4rem .9rem; font-size:.875rem; font-weight:500;
+  cursor:pointer; transition:background .15s, color .15s;
+}
+.opcao-btn:hover, .opcao-btn.selecionado { background:var(--c-primary); color:#fff; }
+.opcao-btn:disabled { opacity:.4; cursor:default; }
+
+/* Input de texto no rodapé do chat */
+.chat-input-wrap {
+  display:flex; gap:.5rem; margin-top:.75rem;
+  background:#f0f0f0; border-radius:var(--radius-lg);
+  padding:.5rem .75rem; align-items:center;
+}
+.chat-input {
+  flex:1; border:none; background:transparent; font-size:.95rem;
+  font-family:var(--font); outline:none;
+}
+.chat-send-btn {
+  background:var(--c-primary); color:#fff; border:none;
+  border-radius:50%; width:36px; height:36px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex-shrink:0; font-size:1rem;
+}
+.chat-send-btn:disabled { opacity:.4; cursor:default; }
+
+/* Calendário simples */
+.mini-cal { background:#fff; border-radius:var(--radius-lg); padding:.75rem; max-width:320px; align-self:flex-start; box-shadow:0 1px 2px rgba(0,0,0,.1); }
+.cal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:.75rem; font-weight:600; }
+.cal-nav { background:none; border:none; cursor:pointer; font-size:1.1rem; color:var(--c-primary); padding:.2rem .4rem; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; text-align:center; }
+.cal-dow { font-size:.7rem; color:var(--c-muted); font-weight:600; padding:.2rem 0; }
+.cal-day {
+  aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+  border-radius:50%; font-size:.85rem; cursor:pointer;
+}
+.cal-day:hover:not(.cal-vazio):not(.cal-passado):not(.cal-indisponivel) { background:var(--c-primary); color:#fff; }
+.cal-passado { color:#ccc; cursor:default; }
+.cal-indisponivel { color:#ccc; cursor:default; }
+.cal-vazio { cursor:default; }
+.cal-selecionado { background:var(--c-primary); color:#fff !important; }
+.cal-hoje { font-weight:700; border:2px solid var(--c-primary); }
+
+/* Slots de horário */
+.slots-grid { display:flex; flex-wrap:wrap; gap:.5rem; max-width:320px; align-self:flex-start; }
+.slot-btn {
+  background:#fff; border:1.5px solid var(--c-border); border-radius:var(--radius);
+  padding:.4rem .8rem; font-size:.875rem; cursor:pointer;
+  transition:background .12s, border-color .12s, color .12s;
+}
+.slot-btn:hover { border-color:var(--c-primary); color:var(--c-primary); }
+.slot-btn.selecionado { background:var(--c-primary); color:#fff; border-color:var(--c-primary); }
+
+@media(max-width:640px) {
+  .chat-layout { flex-direction:column; }
+  .chat-aside { width:100%; position:static; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{% if not product.is_outros %}
+<script>
+// ────────────────────────────────────────────────────────────
+// Motor de conversa estilo WhatsApp
+// ────────────────────────────────────────────────────────────
+const box = document.getElementById('chatBox');
+let availabilityByDate = {};
+let selectedDate = null;
+let selectedSlot = null;
+let clientName = '';
+let clientCpf = '';
+let clientEmail = '';
+let clientPhone = '';
+let confirmViaPhone = false;
+let currentMonth = new Date();
+
+function formatClockTime() {
+  return new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+}
+
+function addBubble(html, tipo='bot', delay=0) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const d = document.createElement('div');
+      d.className = `balao balao-${tipo}`;
+      d.innerHTML = html + `<div class="balao-time">${formatClockTime()}</div>`;
+      box.appendChild(d);
+      box.scrollTop = box.scrollHeight;
+      resolve(d);
+    }, delay);
+  });
+}
+
+function addTypingIndicator() {
+  const d = document.createElement('div');
+  d.className = 'digitando';
+  d.id = 'digitando';
+  d.innerHTML = '<div class="dot-flashing"><span></span><span></span><span></span></div>';
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+  return d;
+}
+
+function removeTypingIndicator() {
+  document.getElementById('digitando')?.remove();
+}
+
+async function botSay(html, delay=600) {
+  await new Promise(r => setTimeout(r, delay * 0.4));
+  const dig = addTypingIndicator();
+  await new Promise(r => setTimeout(r, delay));
+  removeTypingIndicator();
+  return addBubble(html, 'bot');
+}
+
+function addOptions(opcoes, onSelect) {
+  const wrap = document.createElement('div');
+  wrap.className = 'opcoes';
+  wrap.id = 'opcoes-ativas';
+  opcoes.forEach(op => {
+    const btn = document.createElement('button');
+    btn.className = 'opcao-btn';
+    btn.textContent = op.label;
+    btn.onclick = () => {
+      wrap.querySelectorAll('.opcao-btn').forEach(b => b.disabled = true);
+      btn.classList.add('selecionado');
+      addBubble(op.label, 'user');
+      onSelect(op.value, op.label);
+    };
+    wrap.appendChild(btn);
+  });
+  box.appendChild(wrap);
+  box.scrollTop = box.scrollHeight;
+}
+
+function addTextInput(placeholder, onEnvio) {
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-input-wrap';
+  wrap.id = 'input-ativo';
+  wrap.innerHTML = `
+    <input class="chat-input" id="chatTextInput" placeholder="${placeholder}" type="text" autocomplete="off">
+    <button class="chat-send-btn" id="chatSendBtn" title="Enviar">➤</button>
+  `;
+  box.appendChild(wrap);
+  box.scrollTop = box.scrollHeight;
+
+  const input = wrap.querySelector('#chatTextInput');
+  const btn   = wrap.querySelector('#chatSendBtn');
+  input.focus();
+
+  const enviar = () => {
+    const val = input.value.trim();
+    if (!val) return;
+    wrap.remove();
+    addBubble(val, 'user');
+    onEnvio(val);
+  };
+  btn.onclick = enviar;
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') enviar(); });
+}
+
+function removeActiveInputs() {
+  document.getElementById('opcoes-ativas')?.remove();
+  document.getElementById('input-ativo')?.remove();
+  document.getElementById('calendario-ativo')?.remove();
+  document.getElementById('slots-ativos')?.remove();
+}
+
+// ── Calendário ──────────────────────────────────────────────
+function renderCalendar(availabilityByDate, onSelect) {
+  const wrap = document.createElement('div');
+  wrap.className = 'mini-cal';
+  wrap.id = 'calendario-ativo';
+  box.appendChild(wrap);
+  renderMonth(wrap, currentMonth, availabilityByDate, onSelect);
+  box.scrollTop = box.scrollHeight;
+}
+
+function renderMonth(wrap, mes, availabilityByDate, onSelect) {
+  const diasDis = Object.keys(availabilityByDate);
+  const ano = mes.getFullYear();
+  const m   = mes.getMonth();
+  const nomeMes = mes.toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const primeiroDia = new Date(ano, m, 1).getDay();
+  const totalDias = new Date(ano, m+1, 0).getDate();
+
+  wrap.innerHTML = `
+    <div class="cal-header">
+      <button class="cal-nav" id="calPrev">‹</button>
+      <span>${nomeMes}</span>
+      <button class="cal-nav" id="calNext">›</button>
+    </div>
+    <div class="cal-grid">
+      ${['D','S','T','Q','Q','S','S'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}
+      ${Array(primeiroDia).fill('<div class="cal-vazio cal-day"></div>').join('')}
+      ${Array.from({length: totalDias}, (_,i) => {
+        const d = i + 1;
+        const dt = new Date(ano, m, d); dt.setHours(0,0,0,0);
+        const key = `${ano}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const passado = dt < hoje;
+        const disponivel = diasDis.includes(key);
+        let cls = 'cal-day';
+        if (passado) cls += ' cal-passado';
+        else if (!disponivel) cls += ' cal-indisponivel';
+        if (dt.getTime() === hoje.getTime()) cls += ' cal-hoje';
+        const onclick = (!passado && disponivel) ? `onclick="selectDate('${key}', this)"` : '';
+        return `<div class="${cls}" ${onclick}>${d}</div>`;
+      }).join('')}
+    </div>
+  `;
+  wrap.querySelector('#calPrev').onclick = () => {
+    currentMonth = new Date(ano, m - 1, 1);
+    renderMonth(wrap, currentMonth, availabilityByDate, onSelect);
+  };
+  wrap.querySelector('#calNext').onclick = () => {
+    currentMonth = new Date(ano, m + 1, 1);
+    renderMonth(wrap, currentMonth, availabilityByDate, onSelect);
+  };
+
+  window.selectDate = (key, el) => {
+    wrap.querySelectorAll('.cal-day').forEach(d => d.classList.remove('cal-selecionado'));
+    el.classList.add('cal-selecionado');
+    const partes = key.split('-');
+    const legivel = new Date(partes[0], partes[1]-1, partes[2])
+      .toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'});
+    wrap.remove();
+    addBubble(legivel, 'user');
+    onSelect(key, legivel);
+  };
+}
+
+// ── Slots ───────────────────────────────────────────────────
+function renderSlots(slots, onSelect) {
+  const wrap = document.createElement('div');
+  wrap.className = 'slots-grid';
+  wrap.id = 'slots-ativos';
+  slots.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'slot-btn';
+    btn.textContent = s.start;
+    btn.onclick = () => {
+      wrap.querySelectorAll('.slot-btn').forEach(b => b.disabled = true);
+      btn.classList.add('selecionado');
+      wrap.remove();
+      addBubble(s.start, 'user');
+      onSelect(s);
+    };
+    wrap.appendChild(btn);
+  });
+  box.appendChild(wrap);
+  box.scrollTop = box.scrollHeight;
+}
+
+function formatCpfInput(val) {
+  const d = val.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+function isValidCpf(cpf) {
+  const d = cpf.replace(/\D/g, '');
+  if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
+  let s = 0;
+  for (let i = 0; i < 9; i++) s += parseInt(d[i], 10) * (10 - i);
+  let r = (s * 10) % 11;
+  if (r === 10) r = 0;
+  if (r !== parseInt(d[9], 10)) return false;
+  s = 0;
+  for (let i = 0; i < 10; i++) s += parseInt(d[i], 10) * (11 - i);
+  r = (s * 10) % 11;
+  if (r === 10) r = 0;
+  return r === parseInt(d[10], 10);
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// ── Fluxo principal ─────────────────────────────────────────
+async function startFlow() {
+  await botSay(
+    'Olá! 👋 Vou te ajudar a agendar. Preciso de alguns dados seus — incluindo <strong>e-mail</strong>, ' +
+    'obrigatório para confirmação e lembretes — e, no final, você escolhe data e horário.',
+    800,
+  );
+
+  if (window.LOGGED_IN && window.USER_NAME) {
+    await botSay(`Vi que você já está logado como <strong>${window.USER_NAME.split(' ')[0]}</strong>. Vamos confirmar seus dados.`, 400);
+  }
+
+  await nameStep();
+}
+
+async function nameStep() {
+  const sugestao = window.USER_NAME || '';
+  await botSay('Qual é o seu <strong>nome completo</strong>?', 400);
+  addTextInput(sugestao ? `Ex: ${sugestao}` : 'Seu nome completo…', async (nome) => {
+    if (nome.length < 2) {
+      await botSay('Por favor, informe seu nome completo.', 200);
+      await nameStep();
+      return;
+    }
+    clientName = nome;
+    await botSay(`Prazer, <strong>${nome.split(' ')[0]}</strong>! 😊`, 300);
+    await cpfStep();
+  });
+}
+
+async function cpfStep() {
+  await botSay('Informe seu <strong>CPF</strong>:', 400);
+  addTextInput('000.000.000-00', async (cpf) => {
+    if (!isValidCpf(cpf)) {
+      await botSay('CPF inválido. Confira os números e tente de novo.', 200);
+      await cpfStep();
+      return;
+    }
+    clientCpf = cpf.replace(/\D/g, '');
+    await emailStep();
+  });
+}
+
+async function emailStep() {
+  const sug = window.USER_EMAIL || '';
+  await botSay('Qual <strong>e-mail</strong> devemos usar para contato e confirmação?', 400);
+  addTextInput(sug || 'email@exemplo.com', async (email) => {
+    if (!isValidEmail(email)) {
+      await botSay('E-mail inválido. Tente novamente.', 200);
+      await emailStep();
+      return;
+    }
+    clientEmail = email.trim();
+    await confirmationPreferenceStep();
+  });
+}
+
+async function confirmationPreferenceStep() {
+  await botSay(
+    'A <strong>confirmação</strong> e os <strong>lembretes</strong> são enviados por <strong>e-mail</strong> ' +
+    '(obrigatório), com convite para sua agenda (.ics).<br>' +
+    '<span class="text-muted" style="font-size:.85rem;">Quer receber também por telefone/WhatsApp?</span>',
+    500,
+  );
+  addOptions([
+    { label: '📧 Só e-mail', value: 'email_only' },
+    { label: '📧 e 📱 Também por WhatsApp', value: 'email_and_phone' },
+  ], async (val) => {
+    confirmViaPhone = val === 'email_and_phone';
+    if (confirmViaPhone) {
+      await optionalPhoneStep();
+      return;
+    }
+    clientPhone = '';
+    await botSay('Perfeito! Agora vamos escolher data e horário. 📅', 350);
+    await loadAvailability();
+  });
+}
+
+async function optionalPhoneStep() {
+  await botSay(
+    'Quer informar seu <strong>telefone/WhatsApp</strong> agora?<br>' +
+    '<span class="text-muted" style="font-size:.85rem;">Se preferir, pode informar <strong>depois</strong> de confirmar o agendamento.</span>',
+    450,
+  );
+  addOptions([
+    { label: 'Informar agora', value: 'agora' },
+    { label: 'Depois do agendamento', value: 'depois' },
+  ], async (val) => {
+    if (val === 'agora') {
+      await botSay('Digite seu telefone com DDD:', 300);
+      addTextInput('Ex: 11 99999-0000', async (tel) => {
+        const digits = tel.replace(/\D/g, '');
+        if (digits.length < 10) {
+          await botSay('Telefone curto demais. Tente de novo ou escolha informar depois.', 200);
+          await optionalPhoneStep();
+          return;
+        }
+        clientPhone = digits;
+        await botSay('Anotado! 📱', 250);
+        await loadAvailability();
+      });
+      return;
+    }
+    clientPhone = '';
+    await botSay('Combinado! Depois de confirmar, te peço o número. 📅', 350);
+    await loadAvailability();
+  });
+}
+
+async function phoneAfterBookingStep(appointmentId) {
+  await botSay('Para enviar a confirmação no <strong>telefone/WhatsApp</strong>, informe seu número com DDD:', 400);
+  addTextInput('Ex: 11 99999-0000', async (tel) => {
+    const digits = tel.replace(/\D/g, '');
+    if (digits.length < 10) {
+      await botSay('Telefone inválido. Tente novamente.', 200);
+      await phoneAfterBookingStep(appointmentId);
+      return;
+    }
+    const dig = addTypingIndicator();
+    try {
+      const r = await fetch(`/api/appointments/${appointmentId}/phone/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN },
+        body: JSON.stringify({ phone: digits }),
+      });
+      removeTypingIndicator();
+      if (r.ok) {
+        await finalSuccessMessage(true);
+      } else {
+        const err = await r.json();
+        await botSay(`Não consegui salvar o telefone: ${err.erro || err.error || 'tente de novo.'}`, 300);
+      }
+    } catch {
+      removeTypingIndicator();
+      await botSay('Erro de conexão ao salvar o telefone.', 200);
+    }
+  });
+}
+
+async function finalSuccessMessage(phoneSent) {
+  let html = '🎉 <strong>Agendamento confirmado!</strong><br><br>';
+  html += '📧 Enviamos a confirmação por <strong>e-mail</strong> com convite para sua agenda (.ics).<br>';
+  if (confirmViaPhone && phoneSent) {
+    html += '📱 Você também receberá a confirmação no <strong>telefone/WhatsApp</strong>.<br>';
+  }
+  html += '<br>Enviaremos <strong>lembretes</strong> antes do horário marcado. Até lá! 👋';
+  await botSay(html, 400);
+}
+
+async function loadAvailability() {
+  const dig = addTypingIndicator();
+  try {
+    const r = await fetch(`/api/products/${window.PRODUCT_ID}/availability/`);
+    const data = await r.json();
+    availabilityByDate = data.availability || {};
+    removeTypingIndicator();
+  } catch {
+    removeTypingIndicator();
+    await botSay('Ocorreu um erro ao carregar os horários. Tente novamente.', 200);
+    return;
+  }
+
+  if (Object.keys(availabilityByDate).length === 0) {
+    await botSay('Não há horários disponíveis no momento. 😕 Entre em contato diretamente com o profissional.', 200);
+    return;
+  }
+
+  await chooseDateStep();
+}
+
+async function chooseDateStep() {
+  if (!availabilityByDate || Object.keys(availabilityByDate).length === 0) {
+    await loadAvailability();
+    return;
+  }
+  await botSay('Escolha uma <strong>data</strong> disponível:', 300);
+  renderCalendar(availabilityByDate, async (key, legivel) => {
+    selectedDate = key;
+    await botSay(`${legivel} ✅`, 300);
+    await chooseTimeStep(key);
+  });
+}
+
+async function chooseTimeStep(dataKey) {
+  const slots = availabilityByDate[dataKey] || [];
+  await botSay('Agora escolha o <strong>horário</strong>:', 300);
+  renderSlots(slots, async (slot) => {
+    selectedSlot = slot;
+    await botSay(`${slot.start} – ${slot.end} ✅`, 300);
+    await confirmStep();
+  });
+}
+
+async function confirmStep() {
+  const partes = selectedDate.split('-');
+  const dataLegivel = new Date(partes[0], partes[1]-1, partes[2])
+    .toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'});
+
+  await botSay(`
+    Tudo certo! Confirme o agendamento:<br><br>
+    📅 <strong>${dataLegivel}</strong><br>
+    ⏰ <strong>${selectedSlot.start}</strong><br>
+    👤 <strong>${clientName}</strong><br>
+    🪪 CPF: <strong>${formatCpfInput(clientCpf)}</strong><br>
+    ✉️ ${clientEmail}<br>
+    📧 Confirmação por e-mail<br>
+    ${confirmViaPhone ? '📱 Confirmação por telefone/WhatsApp<br>' : ''}
+  `, 500);
+
+  addOptions([
+    {label: '✅ Confirmar', value: 'confirmar'},
+    {label: '↩ Mudar data', value: 'mudar'},
+  ], async (val) => {
+    if (val === 'mudar') {
+      selectedDate = null; selectedSlot = null;
+      await chooseDateStep();
+    } else {
+      await submitAppointment();
+    }
+  });
+}
+
+async function submitAppointment() {
+  const startsAt = `${selectedDate}T${selectedSlot.start}:00`;
+  const dig = addTypingIndicator();
+  try {
+    const r = await fetch('/api/appointments/create/', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken': window.CSRF_TOKEN},
+      body: JSON.stringify({
+        product_id: window.PRODUCT_ID,
+        starts_at: startsAt,
+        client: {
+          name: clientName,
+          cpf: clientCpf,
+          email: clientEmail,
+          phone: clientPhone,
+          confirm_via_email: true,
+          confirm_via_phone: confirmViaPhone,
+        },
+      }),
+    });
+    removeTypingIndicator();
+    if (r.status === 201) {
+      const json = await r.json();
+      if (json.needs_phone) {
+        await botSay('Agendamento registrado! Falta só o telefone para a confirmação por WhatsApp.', 350);
+        await phoneAfterBookingStep(json.id);
+        return;
+      }
+      await finalSuccessMessage(json.phone_confirmation_sent);
+    } else {
+      const err = await r.json();
+      await botSay(`Ops! ${err.erro || err.error || 'Não foi possível confirmar. Tente novamente.'}`, 300);
+    }
+  } catch {
+    removeTypingIndicator();
+    await botSay('Erro de conexão. Verifique sua internet e tente novamente.', 200);
+  }
+}
+
+// Inicia
+startFlow();
+</script>
+{% endif %}
+{% endblock %}

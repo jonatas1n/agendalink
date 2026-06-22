@@ -1,0 +1,128 @@
+<div id="appointmentModal" class="appointment-modal" hidden aria-hidden="true">
+  <div class="appointment-modal__backdrop" data-close-modal></div>
+  <div class="appointment-modal__panel card" role="dialog" aria-modal="true" aria-labelledby="appointmentModalTitle">
+    <header class="appointment-modal__header">
+      <h2 id="appointmentModalTitle">Detalhes do agendamento</h2>
+      <button type="button" class="btn btn-ghost btn-sm btn-icon" data-close-modal aria-label="Fechar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </header>
+
+    <dl class="appointment-detail-list">
+      <div><dt>Nome</dt><dd id="modalName">—</dd></div>
+      <div><dt>E-mail</dt><dd id="modalEmail">—</dd></div>
+      <div><dt>Telefone</dt><dd id="modalPhone">—</dd></div>
+      <div><dt>CPF</dt><dd id="modalCpf">—</dd></div>
+      <div><dt>Serviço</dt><dd id="modalService">—</dd></div>
+      <div><dt>Data e horário</dt><dd id="modalWhen">—</dd></div>
+      <div><dt>Status</dt><dd id="modalStatus">—</dd></div>
+    </dl>
+
+    <div class="appointment-modal__actions" id="appointmentModalActions" hidden>
+      <form method="post" id="appointmentCancelForm" class="appointment-modal__form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button type="submit" class="btn btn-danger btn-block">Cancelar agendamento</button>
+      </form>
+      <div id="appointmentSuggestWrap" class="appointment-modal__form" hidden>
+        <a href="#" id="appointmentSuggestLink" class="btn btn-primary btn-block">Sugerir remarcação</a>
+        <p class="text-muted appointment-modal__hint" id="rescheduleHint">
+          Escolha um horário na agenda e envie a sugestão por e-mail.
+        </p>
+      </div>
+    </div>
+
+    <p class="text-muted appointment-modal__hint" id="appointmentModalReadonly" hidden>
+      Agendamento cancelado — apenas consulta.
+    </p>
+  </div>
+</div>
+
+<script>
+(function () {
+  const modal = document.getElementById('appointmentModal');
+  if (!modal) return;
+
+  const cancelForm = document.getElementById('appointmentCancelForm');
+  const suggestWrap = document.getElementById('appointmentSuggestWrap');
+  const suggestLink = document.getElementById('appointmentSuggestLink');
+  const actionsWrap = document.getElementById('appointmentModalActions');
+  const readonlyNote = document.getElementById('appointmentModalReadonly');
+  const rescheduleHint = document.getElementById('rescheduleHint');
+
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || '—';
+  }
+
+  function openModal(btn) {
+    const d = btn.dataset;
+    setText('modalName', d.name);
+    setText('modalEmail', d.email);
+    setText('modalPhone', d.phone);
+    setText('modalCpf', d.cpf);
+    setText('modalService', d.service);
+    setText('modalWhen', `${d.starts} – ${d.ends}`);
+    setText('modalStatus', d.status);
+
+    cancelForm.action = d.cancelUrl;
+
+    const isCancelled = d.statusKey === 'cancelado';
+    const canSuggest = d.canSuggest === '1';
+    const hasEmail = d.hasEmail === '1';
+
+    actionsWrap.hidden = isCancelled;
+    readonlyNote.hidden = !isCancelled;
+    suggestWrap.hidden = true;
+    if (suggestLink) suggestLink.hidden = false;
+    if (rescheduleHint) {
+      rescheduleHint.hidden = false;
+      rescheduleHint.textContent =
+        'Escolha um horário na agenda e envie a sugestão por e-mail.';
+    }
+
+    if (!isCancelled && canSuggest) {
+      suggestWrap.hidden = false;
+      if (hasEmail && d.suggestUrl && suggestLink) {
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        suggestLink.href = `${d.suggestUrl}?next=${next}`;
+      } else if (rescheduleHint) {
+        suggestLink.hidden = true;
+        rescheduleHint.textContent =
+          'Não há e-mail do cliente para enviar a sugestão.';
+      }
+    }
+
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.appointment-options-btn').forEach((btn) => {
+    btn.addEventListener('click', () => openModal(btn));
+  });
+
+  modal.querySelectorAll('[data-close-modal]').forEach((el) => {
+    el.addEventListener('click', closeModal);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.hidden) closeModal();
+  });
+
+  cancelForm.addEventListener('submit', (e) => {
+    if (!window.confirm('Confirma o cancelamento deste agendamento?')) {
+      e.preventDefault();
+    }
+  });
+})();
+</script>

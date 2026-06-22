@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="form-screen">
+  <div class="page-hero">
+    <h1>{{ title }}</h1>
+    <p class="text-muted">Preencha as informações do seu serviço ou produto.</p>
+  </div>
+
+    <form method="post" enctype="multipart/form-data" class="card stack" id="produtoForm">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>Nome do serviço</label>
+        <input type="text" name="name" value="{{ form.name.value|default:'' }}"
+               placeholder="Ex: Corte de cabelo, Sala de reunião, Consultoria 1h…">
+        {% if form.name.errors %}<span class="error">{{ form.name.errors.0 }}</span>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <span class="form-group-label-sm">Tipo de serviço</span>
+        <div class="precos-toggle" role="radiogroup" aria-label="Tipo de serviço">
+          {% for val, label in service_kind_choices %}
+          <label class="precos-toggle__item">
+            <input type="radio" name="service_kind" value="{{ val }}"
+                   {% if service_kind == val %}checked{% endif %}>
+            <span>{{ label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <span class="hint" id="serviceKindHint">
+          {% if service_kind == 'outros' %}
+            Outros: o cliente entra em contato por e-mail ou WhatsApp, sem escolher horário.
+          {% else %}
+            Agendamento: o cliente escolhe data e horário na página pública.
+          {% endif %}
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label id="descriptionLabel">
+          Descrição
+          {% if service_kind != 'outros' %}
+          <span style="color:var(--c-muted);font-weight:400;">(opcional)</span>
+          {% else %}
+          <span style="color:var(--c-danger, #b91c1c);font-weight:500;">(obrigatório)</span>
+          {% endif %}
+        </label>
+        <textarea name="description" id="productDescription" rows="4"
+                  placeholder="{% if service_kind == 'outros' %}Descreva o que você oferece neste serviço…{% else %}Explique o que está incluído…{% endif %}">{{ form.description.value|default:'' }}</textarea>
+        {% if form.description.errors %}<span class="error">{{ form.description.errors.0 }}</span>{% endif %}
+      </div>
+
+      <div class="form-group" id="contactChannelWrap"{% if service_kind != 'outros' %} hidden{% endif %}>
+        <span class="form-group-label-sm">Como o cliente pode entrar em contato</span>
+        <div class="precos-toggle" role="radiogroup" aria-label="Canal de contato">
+          {% for val, label in contact_channel_choices %}
+          <label class="precos-toggle__item">
+            <input type="radio" name="contact_channel" value="{{ val }}"
+                   {% if contact_channel == val %}checked{% endif %}>
+            <span>{{ label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <span class="hint">Use os dados de e-mail e telefone em <a href="{% url 'store_settings' %}">Definições da loja</a>.</span>
+        {% if form.contact_channel.errors %}<span class="error">{{ form.contact_channel.errors.0 }}</span>{% endif %}
+      </div>
+
+      <div id="bookingFieldsWrap"{% if service_kind == 'outros' %} hidden{% endif %}>
+      <div class="form-group">
+        <label>Vagas simultâneas</label>
+        <input type="number" name="simultaneous_capacity" min="1"
+               value="{{ form.simultaneous_capacity.value|default:1 }}">
+        <span class="hint">Quantas pessoas podem agendar o mesmo horário.</span>
+      </div>
+
+      <div class="form-group">
+        <label>Foto <span style="color:var(--c-muted);font-weight:400;">(opcional)</span></label>
+        <input type="file" name="image" accept="image/*">
+      </div>
+
+      <div class="form-group">
+        <label>Preços</label>
+        <span class="form-group-label-sm">Diferenciar preços por</span>
+        <div class="precos-toggle" role="radiogroup" aria-label="Critério de preço">
+          {% for val, label in price_criterion_choices %}
+          <label class="precos-toggle__item">
+            <input type="radio" name="price_criterion" value="{{ val }}"
+                   {% if price_criterion == val %}checked{% endif %}>
+            <span>{{ label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+
+        <div id="criterio-outros-wrap" class="criterio-outros-wrap"{% if price_criterion != 'outros' %} hidden{% endif %}>
+          <label class="form-group-label-sm" for="price_criterion_label">Nome do critério</label>
+          <input type="text" id="price_criterion_label" name="price_criterion_label"
+                 value="{{ price_criterion_label }}"
+                 placeholder="Ex.: Pacote, Modalidade, Plano…">
+          <span class="hint">Aparece como rótulo da coluna nas opções abaixo.</span>
+        </div>
+
+        {% if price_error %}<span class="error">{{ price_error }}</span>{% endif %}
+
+        <p class="precos-col-label text-muted" id="precosColLabel"></p>
+
+        <div id="precos-container" class="precos-container" data-criterio="{{ price_criterion }}">
+          {% for linha in price_rows %}
+          <div class="preco-row">
+            <div class="preco-row-param">
+              <div class="preco-duracao-wrap preco-var preco-var--duracao" aria-label="Duração">
+                <input type="number" name="price_duration_hours" class="duracao-h" min="0" max="48"
+                       value="{{ linha.duration_h }}" aria-label="Horas">
+                <span class="duracao-unit">h</span>
+                <input type="number" name="price_duration_minutes_part" class="duracao-m" min="0" max="59"
+                       value="{{ linha.duration_m }}" aria-label="Minutos">
+                <span class="duracao-unit">min</span>
+              </div>
+              <input type="text" name="price_label" class="preco-var preco-var--texto"
+                     value="{% if price_criterion != 'duracao' %}{{ linha.label }}{% endif %}"
+                     aria-label="Opção">
+            </div>
+            <div class="preco-row-valor">
+              <span class="preco-moeda" aria-hidden="true">R$</span>
+              <input type="text" name="price_amount" class="preco-valor" data-currency
+                     value="{{ linha.price }}" placeholder="0,00" aria-label="Preço">
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm remove-preco preco-row-remove" title="Remover">✕</button>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="button" id="addPreco" class="btn btn-ghost btn-sm" style="align-self:flex-start;margin-top:.35rem;">
+          + Adicionar preço
+        </button>
+      </div>
+      </div>
+
+      {% if form.non_field_errors %}
+      <div class="error">{{ form.non_field_errors.0 }}</div>
+      {% endif %}
+
+      <div class="form-actions" style="display:flex;gap:1rem;">
+        <button type="submit" class="btn btn-primary">Salvar serviço</button>
+        <a href="/dashboard/" class="btn btn-ghost">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-group-label-sm { font-size: .85rem; font-weight: 500; margin: .75rem 0 .35rem; display: block; }
+.precos-toggle {
+  display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem;
+}
+.precos-toggle__item {
+  cursor: pointer; font-size: .875rem;
+}
+.precos-toggle__item input { position: absolute; opacity: 0; pointer-events: none; }
+.precos-toggle__item span {
+  display: inline-block; padding: .45rem .85rem;
+  border: 1px solid var(--c-border); border-radius: 999px;
+  background: var(--c-bg); transition: border-color .15s, background .15s;
+}
+.precos-toggle__item input:checked + span {
+  border-color: var(--c-primary); background: #eff6ff; color: var(--c-primary);
+  font-weight: 500;
+}
+.criterio-outros-wrap { margin-bottom: .75rem; }
+.criterio-outros-wrap input { width: 100%; max-width: 320px; }
+.precos-col-label { font-size: .825rem; margin: .35rem 0 .5rem; }
+.precos-container { display:flex; flex-direction:column; gap:.6rem; }
+.preco-row {
+  display:flex; align-items:center; gap:.75rem;
+  padding:.75rem; background:var(--c-surface); border-radius:var(--radius);
+  border:1px solid var(--c-border);
+}
+.preco-row-param { flex:1; min-width:0; display:flex; }
+.preco-row-param .preco-var { width:100%; }
+.preco-row-valor {
+  display:flex; align-items:center; gap:.35rem; flex-shrink:0;
+}
+.preco-moeda {
+  color:var(--c-muted); font-size:.9rem; font-weight:500; white-space:nowrap;
+}
+.preco-row-remove { margin-left:auto; flex-shrink:0; }
+.preco-row select, .preco-row input[type=text], .preco-row input[type=number] {
+  padding:.5rem .7rem; border:1px solid var(--c-border);
+  border-radius:var(--radius); font-size:.9rem; font-family:var(--font);
+  background:var(--c-bg);
+}
+.preco-duracao-wrap {
+  display:flex; align-items:center; gap:.35rem; flex-wrap:wrap;
+}
+.preco-duracao-wrap .duracao-h,
+.preco-duracao-wrap .duracao-m { width:4rem; text-align:center; padding:.5rem .4rem; }
+.preco-duracao-wrap .duracao-unit { color:var(--c-muted); font-size:.875rem; }
+.preco-var--texto { min-width:160px; flex:1; }
+.preco-valor { width:112px; text-align:right; }
+.preco-var[hidden] { display: none !important; }
+@media (max-width: 640px) {
+  .preco-row { flex-wrap:wrap; }
+  .preco-row-param { flex-basis:100%; }
+  .preco-row-valor { flex:1; justify-content:flex-start; }
+  .preco-row-remove { margin-left:auto; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const defaultDurationHours = '1';
+  const defaultDurationMinutes = '0';
+  const placeholders = {
+    tipo: '{{ label_placeholder.tipo|escapejs }}',
+    tamanho: '{{ label_placeholder.tamanho|escapejs }}',
+    outros: '{{ label_placeholder.outros|escapejs }}',
+  };
+
+  function syncServiceKind() {
+    const kind = document.querySelector('input[name="service_kind"]:checked')?.value || 'agendamento';
+    const isOutros = kind === 'outros';
+    document.getElementById('contactChannelWrap').hidden = !isOutros;
+    document.getElementById('bookingFieldsWrap').hidden = isOutros;
+    const hint = document.getElementById('serviceKindHint');
+    if (hint) {
+      hint.textContent = isOutros
+        ? 'Outros: o cliente entra em contato por e-mail ou WhatsApp, sem escolher horário.'
+        : 'Agendamento: o cliente escolhe data e horário na página pública.';
+    }
+    const desc = document.getElementById('productDescription');
+    if (desc) {
+      desc.placeholder = isOutros
+        ? 'Descreva o que você oferece neste serviço…'
+        : 'Explique o que está incluído…';
+    }
+  }
+
+  document.querySelectorAll('input[name="service_kind"]').forEach((el) => {
+    el.addEventListener('change', syncServiceKind);
+  });
+
+  function currentPriceCriterion() {
+    const checked = document.querySelector('input[name="price_criterion"]:checked');
+    return checked ? checked.value : 'duracao';
+  }
+
+  function priceColumnLabel() {
+    const c = currentPriceCriterion();
+    if (c === 'outros') {
+      const nome = document.getElementById('price_criterion_label')?.value.trim();
+      return nome || 'Opção';
+    }
+    const map = { duracao: 'Duração', tipo: 'Tipo', tamanho: 'Tamanho' };
+    return map[c] || 'Opção';
+  }
+
+  function syncPriceMode() {
+    const c = currentPriceCriterion();
+    document.getElementById('precos-container').dataset.criterio = c;
+    const outrosWrap = document.getElementById('criterio-outros-wrap');
+    outrosWrap.hidden = c !== 'outros';
+    document.getElementById('precosColLabel').textContent =
+      'Cada linha: ' + priceColumnLabel().toLowerCase() + (c === 'duracao' ? ' (horas e minutos livres)' : '') + ' + valor em reais';
+
+    document.querySelectorAll('.preco-row').forEach((row) => {
+      const durWrap = row.querySelector('.preco-var--duracao');
+      const txt = row.querySelector('.preco-var--texto');
+      if (c === 'duracao') {
+        durWrap.hidden = false;
+        txt.hidden = true;
+        txt.removeAttribute('required');
+      } else {
+        durWrap.hidden = true;
+        txt.hidden = false;
+        txt.placeholder = placeholders[c] || placeholders.outros;
+        txt.setAttribute('required', 'required');
+      }
+    });
+  }
+
+  function resetPriceRow(row) {
+    const durWrap = row.querySelector('.preco-var--duracao');
+    const txt = row.querySelector('.preco-var--texto');
+    const inp = row.querySelector('.preco-valor');
+    if (durWrap) {
+      durWrap.querySelector('.duracao-h').value = defaultDurationHours;
+      durWrap.querySelector('.duracao-m').value = defaultDurationMinutes;
+    }
+    if (txt) txt.value = '';
+    if (inp) inp.value = '';
+    syncPriceMode();
+  }
+
+  function appendPriceRow() {
+    const html = `
+      <div class="preco-row">
+        <div class="preco-row-param">
+          <div class="preco-duracao-wrap preco-var preco-var--duracao" aria-label="Duração">
+            <input type="number" name="price_duration_hours" class="duracao-h" min="0" max="48" value="1" aria-label="Horas">
+            <span class="duracao-unit">h</span>
+            <input type="number" name="price_duration_minutes_part" class="duracao-m" min="0" max="59" value="0" aria-label="Minutos">
+            <span class="duracao-unit">min</span>
+          </div>
+          <input type="text" name="price_label" class="preco-var preco-var--texto" aria-label="Opção">
+        </div>
+        <div class="preco-row-valor">
+          <span class="preco-moeda" aria-hidden="true">R$</span>
+          <input type="text" name="price_amount" class="preco-valor" data-currency placeholder="0,00" aria-label="Preço">
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm remove-preco preco-row-remove" title="Remover">✕</button>
+      </div>`;
+    document.getElementById('precos-container').insertAdjacentHTML('beforeend', html);
+    window.AgendaFacil?.initCurrencyInputs(document.getElementById('precos-container'));
+    syncPriceMode();
+  }
+
+  document.querySelectorAll('input[name="price_criterion"]').forEach((el) => {
+    el.addEventListener('change', syncPriceMode);
+  });
+  document.getElementById('price_criterion_label')?.addEventListener('input', syncPriceMode);
+
+  document.getElementById('addPreco').addEventListener('click', appendPriceRow);
+
+  document.getElementById('precos-container').addEventListener('click', (e) => {
+    if (!e.target.classList.contains('remove-preco')) return;
+    const container = document.getElementById('precos-container');
+    const rows = container.querySelectorAll('.preco-row');
+    if (rows.length > 1) {
+      e.target.closest('.preco-row').remove();
+      return;
+    }
+    resetPriceRow(rows[0]);
+  });
+
+  syncPriceMode();
+  syncServiceKind();
+})();
+</script>
+{% endblock %}

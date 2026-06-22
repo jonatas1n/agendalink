@@ -1,0 +1,19 @@
+---
+description: AgendaFácil — visão geral do monólito Django e armadilhas
+alwaysApply: true
+---
+
+# AgendaFácil (monólito)
+
+- Repo: agendamento. App Django em **`app/`** (não `backend/`).
+- Apps: `core`, `espacos`, `produtos`, `agendamentos`. FBV + templates; JSON em `*/api.py` + `core/api_urls.py`.
+- UI: `app/templates/`, `static/css/base.css` (tokens CSS, sem framework).
+- Dev: `docker compose` na raiz; `.env` via `env_file` no serviço `web`.
+
+**Domínio:** Espaco → MembroEspaco → Produto (opcional `espaco`) → Agendamento. User padrão Django.
+
+**Não assumir:** DRF, React, tests existentes, todos templates das views (faltam vários em `produtos/` e `agendamentos/detalhe.html`).
+
+**Idioma:** pt-BR na UI/API pública; código estrutural em inglês Django.
+
+Detalhes: `AGENTS.md` e `.cursor/PROMPTS.md`.

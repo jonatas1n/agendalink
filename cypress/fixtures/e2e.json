@@ -1,0 +1,13 @@
+{
+  "professional": {
+    "username": "e2e_prof",
+    "password": "E2eTestPass123!",
+    "email": "e2e.prof@example.com"
+  },
+  "productName": "Serviço E2E",
+  "guestName": "Cliente E2E Seed",
+  "guestCpf": "529.982.247-25",
+  "guestCpfDigits": "52998224725",
+  "guestEmail": "novo.cliente.e2e@example.com",
+  "validCpf": "111.444.777-35"
+}

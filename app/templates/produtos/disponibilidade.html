@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block title %}Horários — {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="form-screen">
+  <div class="page-hero">
+    <p class="text-muted">← <a href="/dashboard/">Painel</a></p>
+    <h1>Horários disponíveis</h1>
+    <p class="text-muted">{{ product.name }}</p>
+  </div>
+
+    <form method="post" id="dispForm" class="card stack">
+      {% csrf_token %}
+
+      <p class="text-muted" style="font-size:.9rem;">
+        Defina em quais dias da semana e horários seu serviço está disponível para agendamento.
+      </p>
+
+      <div id="slots-container">
+        {% for d in weekly_availabilities %}
+        <div class="slot-row" data-index="{{ forloop.counter0 }}">
+          <select name="weekday" class="slot-dia">
+            <option value="0" {% if d.weekday == 0 %}selected{% endif %}>Segunda</option>
+            <option value="1" {% if d.weekday == 1 %}selected{% endif %}>Terça</option>
+            <option value="2" {% if d.weekday == 2 %}selected{% endif %}>Quarta</option>
+            <option value="3" {% if d.weekday == 3 %}selected{% endif %}>Quinta</option>
+            <option value="4" {% if d.weekday == 4 %}selected{% endif %}>Sexta</option>
+            <option value="5" {% if d.weekday == 5 %}selected{% endif %}>Sábado</option>
+            <option value="6" {% if d.weekday == 6 %}selected{% endif %}>Domingo</option>
+          </select>
+          <input type="time" name="start_time" value="{{ d.start_time|time:'H:i' }}">
+          <span class="slot-sep">até</span>
+          <input type="time" name="end_time" value="{{ d.end_time|time:'H:i' }}">
+          <div class="slot-row-actions">
+            <button type="button" class="btn btn-ghost btn-sm duplicate-slot" title="Duplicar linha">
+              <span class="btn-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span>Duplicar
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm remove-slot" title="Remover">✕</button>
+          </div>
+        </div>
+        {% empty %}
+        <!-- Linha padrão para novos produtos -->
+        <div class="slot-row">
+          <select name="weekday" class="slot-dia">
+            <option value="0">Segunda</option>
+            <option value="1">Terça</option>
+            <option value="2">Quarta</option>
+            <option value="3">Quinta</option>
+            <option value="4">Sexta</option>
+            <option value="5">Sábado</option>
+            <option value="6">Domingo</option>
+          </select>
+          <input type="time" name="start_time" value="09:00">
+          <span class="slot-sep">até</span>
+          <input type="time" name="end_time" value="18:00">
+          <div class="slot-row-actions">
+            <button type="button" class="btn btn-ghost btn-sm duplicate-slot" title="Duplicar linha">
+              <span class="btn-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span>Duplicar
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm remove-slot" title="Remover">✕</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <button type="button" id="addSlot" class="btn btn-ghost" style="align-self:flex-start;">
+        + Adicionar outro período
+      </button>
+
+      <hr class="divider">
+
+      <h2 class="disp-section-title">Ausências e folgas</h2>
+      <p class="text-muted disp-section-hint">
+        Marque intervalos em que você não atende — férias, viagem ou imprevistos. Nesses dias ninguém consegue agendar.
+      </p>
+
+      <div id="unavailable-container" class="stack-tight">
+        {% for p in unavailable_periods %}
+        <div class="excecao-row excecao-row--indisponivel">
+          <input type="date" name="unavailable_start_date" value="{{ p.start_date|date:'Y-m-d' }}" aria-label="De">
+          <span class="slot-sep">até</span>
+          <input type="date" name="unavailable_end_date" value="{{ p.end_date|date:'Y-m-d' }}" aria-label="Até">
+          <input type="text" name="unavailable_reason" value="{{ p.reason }}" placeholder="Motivo (opcional)" class="excecao-motivo">
+          <button type="button" class="btn btn-ghost btn-sm remove-row" title="Remover">✕</button>
+        </div>
+        {% endfor %}
+      </div>
+      <button type="button" id="addUnavailable" class="btn btn-ghost btn-sm" style="align-self:flex-start;">
+        + Adicionar período de ausência
+      </button>
+
+      <hr class="divider">
+
+      <h2 class="disp-section-title">Horários em datas específicas</h2>
+      <p class="text-muted disp-section-hint">
+        Atenda em um dia fora da rotina semanal (ex.: um sábado extra). Nessa data valem só estes horários, no lugar da rotina.
+      </p>
+
+      <div id="exception-container" class="stack-tight">
+        {% for e in date_availabilities %}
+        <div class="excecao-row excecao-row--data">
+          <input type="date" name="exception_date" value="{{ e.date|date:'Y-m-d' }}" aria-label="Data">
+          <input type="time" name="exception_start_time" value="{{ e.start_time|time:'H:i' }}">
+          <span class="slot-sep">até</span>
+          <input type="time" name="exception_end_time" value="{{ e.end_time|time:'H:i' }}">
+          <button type="button" class="btn btn-ghost btn-sm remove-row" title="Remover">✕</button>
+        </div>
+        {% endfor %}
+      </div>
+      <button type="button" id="addExceptionDate" class="btn btn-ghost btn-sm" style="align-self:flex-start;">
+        + Adicionar data específica
+      </button>
+
+      <div style="display:flex;gap:1rem;margin-top:1.25rem;">
+        <button type="submit" class="btn btn-primary">Salvar horários</button>
+        <a href="/dashboard/" class="btn btn-ghost">Agora não</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.slot-row {
+  display:flex; align-items:center; gap:.6rem; flex-wrap:wrap;
+  padding:.75rem; background:var(--c-surface); border-radius:var(--radius);
+  border:1px solid var(--c-border);
+}
+.slot-row select, .slot-row input[type=time] {
+  padding:.5rem .7rem; border:1px solid var(--c-border);
+  border-radius:var(--radius); font-size:.9rem; font-family:var(--font);
+  background:var(--c-bg);
+}
+.slot-row select { min-width:110px; }
+.slot-sep { color:var(--c-muted); font-size:.875rem; }
+.slot-row-actions { display:flex; align-items:center; gap:.35rem; margin-left:auto; flex-shrink:0; }
+.btn-icon { display:inline-flex; align-items:center; margin-right:.3rem; }
+.btn-icon svg { width:1em; height:1em; vertical-align:middle; }
+.disp-section-title { font-size:1.05rem; margin:0 0 .35rem; }
+.disp-section-hint { font-size:.875rem; margin:0 0 .75rem; }
+.stack-tight { display:flex; flex-direction:column; gap:.6rem; }
+.excecao-row {
+  display:flex; align-items:center; gap:.6rem; flex-wrap:wrap;
+  padding:.75rem; background:var(--c-surface); border-radius:var(--radius);
+  border:1px solid var(--c-border);
+}
+.excecao-row input[type=date],
+.excecao-row input[type=time],
+.excecao-row input[type=text].excecao-motivo {
+  padding:.5rem .7rem; border:1px solid var(--c-border);
+  border-radius:var(--radius); font-size:.9rem; font-family:var(--font);
+  background:var(--c-bg);
+}
+.excecao-motivo { flex:1; min-width:140px; }
+.excecao-row .remove-row { margin-left:auto; flex-shrink:0; }
+#slots-container { display:flex; flex-direction:column; gap:.6rem; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const WEEKDAYS = [
+    ['0', 'Segunda'], ['1', 'Terça'], ['2', 'Quarta'], ['3', 'Quinta'],
+    ['4', 'Sexta'], ['5', 'Sábado'], ['6', 'Domingo'],
+  ];
+
+  function weekdayOptions(selected) {
+    return WEEKDAYS.map(([val, label]) =>
+      `<option value="${val}"${String(selected) === val ? ' selected' : ''}>${label}</option>`
+    ).join('');
+  }
+
+  const COPY_ICON = `<span class="btn-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span>`;
+
+  function duplicateButtonHtml() {
+    return `<button type="button" class="btn btn-ghost btn-sm duplicate-slot" title="Duplicar linha">${COPY_ICON}Duplicar</button>`;
+  }
+
+  function buildSlotRow(weekday = '0', startTime = '09:00', endTime = '18:00') {
+    return `
+    <div class="slot-row">
+      <select name="weekday" class="slot-dia">${weekdayOptions(weekday)}</select>
+      <input type="time" name="start_time" value="${startTime}">
+      <span class="slot-sep">até</span>
+      <input type="time" name="end_time" value="${endTime}">
+      <div class="slot-row-actions">
+        ${duplicateButtonHtml()}
+        <button type="button" class="btn btn-ghost btn-sm remove-slot" title="Remover">✕</button>
+      </div>
+    </div>`;
+  }
+
+  function rowValues(row) {
+    return {
+      weekday: row.querySelector('[name="weekday"]').value,
+      startTime: row.querySelector('[name="start_time"]').value,
+      endTime: row.querySelector('[name="end_time"]').value,
+    };
+  }
+
+  function nextWeekday(weekday) {
+    return String((parseInt(weekday, 10) + 1) % 7);
+  }
+
+  function markOriginalTimes(row, startTime, endTime) {
+    row.dataset.createdStartTime = startTime;
+    row.dataset.createdEndTime = endTime;
+  }
+
+  function timesUnchanged(row) {
+    const { startTime, endTime } = rowValues(row);
+    return row.dataset.createdStartTime !== undefined
+      && startTime === row.dataset.createdStartTime
+      && endTime === row.dataset.createdEndTime;
+  }
+
+  function insertRow(weekday, startTime, endTime, afterNode = null) {
+    const html = buildSlotRow(weekday, startTime, endTime);
+    if (afterNode) {
+      afterNode.insertAdjacentHTML('afterend', html);
+      const row = afterNode.nextElementSibling;
+      markOriginalTimes(row, startTime, endTime);
+      return row;
+    }
+    container.insertAdjacentHTML('beforeend', html);
+    const row = container.lastElementChild;
+    markOriginalTimes(row, startTime, endTime);
+    return row;
+  }
+
+  const container = document.getElementById('slots-container');
+
+  container.querySelectorAll('.slot-row').forEach((row) => {
+    const v = rowValues(row);
+    markOriginalTimes(row, v.startTime, v.endTime);
+  });
+
+  document.getElementById('addSlot').onclick = () => {
+    const rows = container.querySelectorAll('.slot-row');
+    if (rows.length === 0) {
+      insertRow('0', '09:00', '18:00');
+      return;
+    }
+    const last = rows[rows.length - 1];
+    const v = rowValues(last);
+    if (timesUnchanged(last)) {
+      insertRow(nextWeekday(v.weekday), v.startTime, v.endTime);
+      return;
+    }
+    insertRow('0', '09:00', '18:00');
+  };
+
+  container.addEventListener('click', (e) => {
+    const dupBtn = e.target.closest('.duplicate-slot');
+    if (dupBtn) {
+      const row = dupBtn.closest('.slot-row');
+      const { weekday, startTime, endTime } = rowValues(row);
+      insertRow(weekday, startTime, endTime, row);
+      return;
+    }
+    const removeBtn = e.target.closest('.remove-slot');
+    if (removeBtn) {
+      const rows = container.querySelectorAll('.slot-row');
+      if (rows.length > 1) removeBtn.closest('.slot-row').remove();
+    }
+  });
+
+  const unavailableContainer = document.getElementById('unavailable-container');
+  const exceptionContainer = document.getElementById('exception-container');
+
+  function buildUnavailableRow(startDate = '', endDate = '', reason = '') {
+    return `
+    <div class="excecao-row excecao-row--indisponivel">
+      <input type="date" name="unavailable_start_date" value="${startDate}" aria-label="De">
+      <span class="slot-sep">até</span>
+      <input type="date" name="unavailable_end_date" value="${endDate}" aria-label="Até">
+      <input type="text" name="unavailable_reason" value="${reason}" placeholder="Motivo (opcional)" class="excecao-motivo">
+      <button type="button" class="btn btn-ghost btn-sm remove-row" title="Remover">✕</button>
+    </div>`;
+  }
+
+  function buildExceptionDateRow(date = '', startTime = '09:00', endTime = '18:00') {
+    return `
+    <div class="excecao-row excecao-row--data">
+      <input type="date" name="exception_date" value="${date}" aria-label="Data">
+      <input type="time" name="exception_start_time" value="${startTime}">
+      <span class="slot-sep">até</span>
+      <input type="time" name="exception_end_time" value="${endTime}">
+      <button type="button" class="btn btn-ghost btn-sm remove-row" title="Remover">✕</button>
+    </div>`;
+  }
+
+  document.getElementById('addUnavailable').onclick = () => {
+    unavailableContainer.insertAdjacentHTML('beforeend', buildUnavailableRow());
+  };
+
+  document.getElementById('addExceptionDate').onclick = () => {
+    exceptionContainer.insertAdjacentHTML('beforeend', buildExceptionDateRow());
+  };
+
+  document.getElementById('dispForm').addEventListener('click', (e) => {
+    const removeBtn = e.target.closest('.remove-row');
+    if (!removeBtn) return;
+    removeBtn.closest('.excecao-row')?.remove();
+  });
+
+  unavailableContainer.addEventListener('change', (e) => {
+    if (e.target.name !== 'unavailable_start_date') return;
+    const row = e.target.closest('.excecao-row');
+    const endInput = row.querySelector('[name="unavailable_end_date"]');
+    if (endInput && !endInput.value) endInput.value = e.target.value;
+  });
+})();
+</script>
+{% endblock %}

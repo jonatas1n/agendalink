@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Agende com facilidade{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <div class="hero-text">
+      <h1>Agendamentos sem complicação</h1>
+      <p class="hero-sub">Crie sua agenda e deixe seus clientes agendarem em poucos toques — como uma conversa no WhatsApp.</p>
+      <div class="hero-actions">
+        <a href="/auth/cadastro/" class="btn btn-primary btn-lg">Começar agora — é grátis</a>
+        <a href="#como-funciona" class="btn btn-ghost btn-lg">Ver como funciona</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="como-funciona" class="section-como">
+  <div class="container">
+    <h2>Como funciona</h2>
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">1</span>
+        <h3>Crie sua conta</h3>
+        <p>Cadastro em menos de um minuto, sem cartão de crédito.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <h3>Adicione seus serviços</h3>
+        <p>Diga o que você oferece, o preço e os horários disponíveis.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <h3>Compartilhe o link</h3>
+        <p>Mande para seus clientes. Eles agendam sozinhos, pelo celular.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hero {
+  padding: 4rem 0 3.5rem;
+  border-bottom: 1px solid var(--c-border);
+}
+.hero-text { max-width: 600px; }
+.hero-sub { font-size: 1.1rem; color: var(--c-muted); margin: 1rem 0 2rem; line-height: 1.7; }
+.hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+.section-como { padding: 3rem 0; }
+.section-como h2 { margin-bottom: 2rem; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
+.step { display: flex; flex-direction: column; gap: .5rem; }
+.step-num {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--c-primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .95rem;
+}
+.step h3 { margin-top: .25rem; }
+.step p { color: var(--c-muted); font-size: .95rem; }
+
+</style>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Escolha seu plano{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="form-screen">
+    <div class="page-hero">
+      <h1>Escolha como começar</h1>
+      <p class="text-muted">Selecione o trial gratuito ou assine agora para usar o AgendaFácil.</p>
+    </div>
+
+    <div class="billing-plan-grid">
+      <form method="post" class="card billing-plan-card stack">
+        {% csrf_token %}
+        <input type="hidden" name="plan" value="trial">
+        <h2 class="billing-plan-card__title">30 dias grátis</h2>
+        <p class="text-muted billing-plan-card__desc">
+          Experimente todos os recursos por 30 dias. Sem cartão nesta etapa.
+        </p>
+        <p class="billing-plan-card__price">R$ 0</p>
+        <button type="submit" class="btn btn-ghost" {% if subscription.trial_used %}disabled{% endif %}>
+          {% if subscription.trial_used %}Trial já utilizado{% else %}Começar trial{% endif %}
+        </button>
+      </form>
+
+      <div class="card billing-plan-card stack">
+        <h2 class="billing-plan-card__title">Assinar agora</h2>
+        <p class="text-muted billing-plan-card__desc">
+          Pagamento mensal via Asaas (Pix, boleto ou cartão na fatura).
+        </p>
+        {% if paid_plan %}
+        <p class="billing-plan-card__price">R$ {{ paid_plan.price }}/mês</p>
+        {% else %}
+        <p class="billing-plan-card__price text-muted">Plano em configuração</p>
+        {% endif %}
+        <a href="{% url 'billing_subscribe' %}" class="btn btn-primary">Assinar agora</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.billing-plan-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+.billing-plan-card__title { margin: 0; font-size: 1.15rem; }
+.billing-plan-card__desc { margin: .35rem 0 1rem; line-height: 1.5; font-size: .9rem; }
+.billing-plan-card__price { font-size: 1.35rem; font-weight: 600; margin: 0 0 1rem; }
+</style>
+{% endblock %}

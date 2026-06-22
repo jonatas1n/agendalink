@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ space.name }}{% endblock %}
+
+{% block content %}
+<div class="espaco-capa">
+  {% if space.cover_photo %}
+    <img src="{{ space.cover_photo.url }}" alt="Capa {{ space.name }}" class="capa-img">
+  {% endif %}
+  <div class="container">
+    <div class="espaco-identidade">
+      {% if space.logo %}
+        <img src="{{ space.logo.url }}" alt="Logo" class="espaco-logo">
+      {% else %}
+        <div class="espaco-logo espaco-logo-placeholder">{{ space.name|slice:":1" }}</div>
+      {% endif %}
+      <div>
+        <h1>{{ space.name }}</h1>
+        {% if space.address %}<p class="text-muted">📍 {{ space.address }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  {% if space.description %}
+  <section class="espaco-sobre card">
+    <h2>Sobre o espaço</h2>
+    <p>{{ space.description }}</p>
+  </section>
+  {% endif %}
+
+  <section class="profissionais-section">
+    <h2>Profissionais</h2>
+    {% if members %}
+      <div class="profissionais-grid">
+        {% for m in members %}
+        <a href="{% url 'public_professional' space.slug m.pk %}" class="profissional-card card">
+          <div class="prof-avatar">
+            {% if m.profile_photo %}
+              <img src="{{ m.profile_photo.url }}" alt="{{ m.user.get_full_name }}">
+            {% else %}
+              <div class="avatar avatar-lg">{{ m.user.first_name|slice:":1" }}{{ m.user.last_name|slice:":1" }}</div>
+            {% endif %}
+          </div>
+          <div class="prof-info">
+            <h3>{{ m.user.get_full_name|default:m.user.username }}</h3>
+            {% if m.specialty %}<span class="badge badge-blue">{{ m.specialty }}</span>{% endif %}
+            {% if m.bio %}<p class="text-muted">{{ m.bio|truncatechars:100 }}</p>{% endif %}
+          </div>
+          <span class="prof-cta">Ver agenda →</span>
+        </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">Nenhum profissional cadastrado ainda.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.espaco-capa { background: var(--c-surface); border-bottom: 1px solid var(--c-border); margin-bottom: 2rem; padding-bottom: 1.5rem; }
+.capa-img { width: 100%; height: 220px; object-fit: cover; display: block; margin-bottom: 1.5rem; }
+.espaco-identidade { display: flex; align-items: center; gap: 1.25rem; }
+.espaco-logo { width: 64px; height: 64px; border-radius: var(--radius-lg); object-fit: cover; border: 2px solid var(--c-border); }
+.espaco-logo-placeholder { width:64px; height:64px; border-radius:var(--radius-lg); background:var(--c-primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.75rem; font-weight:700; }
+.espaco-sobre { margin-bottom: 2rem; }
+.espaco-sobre h2 { margin-bottom: .75rem; }
+
+.profissionais-section h2 { margin-bottom: 1.25rem; }
+.profissionais-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
+.profissional-card {
+  display: flex; flex-direction: column; gap: .75rem;
+  text-decoration: none; color: inherit;
+  transition: box-shadow .15s, transform .1s;
+  cursor: pointer;
+}
+.profissional-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); text-decoration: none; }
+.prof-avatar img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
+.prof-info { display: flex; flex-direction: column; gap: .4rem; flex: 1; }
+.prof-info h3 { font-size: 1.05rem; }
+.prof-cta { font-size: .875rem; color: var(--c-primary); font-weight: 500; margin-top: .25rem; }
+</style>
+{% endblock %}

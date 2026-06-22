@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Agenda coletiva — {{ space.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-hero">
+    <p class="text-muted"><a href="{% url 'public_space' space.slug %}">{{ space.name }}</a></p>
+    <h1>Agenda coletiva</h1>
+    <p class="text-muted">Agendamentos confirmados de todos os membros do espaço.</p>
+  </div>
+
+  {% if appointments %}
+  <div class="table-wrap card" style="padding:0;overflow:hidden;">
+    <table>
+      <thead>
+        <tr>
+          <th>Data e hora</th>
+          <th>Profissional</th>
+          <th>Serviço</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appointments %}
+        <tr>
+          <td>
+            <strong>{{ a.starts_at|date:"d/m/Y" }}</strong><br>
+            <small class="text-muted">{{ a.starts_at|date:"H:i" }} – {{ a.ends_at|date:"H:i" }}</small>
+          </td>
+          <td>{{ a.product.owner.get_full_name|default:a.product.owner.username }}</td>
+          <td>{{ a.product.name }}</td>
+          <td>
+            {% if a.status == 'confirmado' %}<span class="badge badge-green">Confirmado</span>
+            {% elif a.status == 'pendente' %}<span class="badge badge-yellow">Pendente</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="card" style="text-align:center;padding:3rem 1rem;">
+      <p style="font-size:2rem;">📅</p>
+      <p class="text-muted">Nenhum agendamento encontrado para os próximos dias.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
